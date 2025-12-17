@@ -1,8 +1,13 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/uploads/:path*",
+        destination: "/../uploads/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -116,12 +116,13 @@ body {
 
 .dashboard,
 .upload-page {
-  padding: 32px;
+  padding: 100px;
 }
 
 .title {
   font-size: 28px;
   margin-bottom: 24px;
+  text-align: center;
 }
 
 /* Cards & grid */

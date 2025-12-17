@@ -2,82 +2,40 @@
 
 import { useState } from "react";
 
-type UploadStatus = "idle" | "uploading" | "done" | "error";
-
 export default function UploadPage() {
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [status, setStatus] = useState<UploadStatus>("idle");
+  const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFiles(e.target.files);
-    setStatus("idle");
-    setMessage("");
-  };
+  const upload = async () => {
+    if (!file) return;
 
-  const handleUpload = async () => {
-    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    formData.append("file", file);
 
-    setStatus("uploading");
-    setMessage("");
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-    try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to upload ${file.name}`);
-        }
-      }
-
-      setStatus("done");
-      setMessage("Upload complete! Check your dashboard.");
-    } catch (err: any) {
-      console.error(err);
-      setStatus("error");
-      setMessage(err.message ?? "Upload failed");
-    }
+    const data = await res.json();
+    setMessage(data.ok ? "Uploaded!" : "Failed");
   };
 
   return (
     <main className="upload-page">
-      <h1 className="title">Upload Videos</h1>
+      <h1>Upload One Video</h1>
 
-      <div className="card upload-card">
-        <label className="field">
-          <span>Select one or more video files</span>
-          <input type="file" multiple onChange={handleFileChange} />
-        </label>
+      <input
+        type="file"
+        accept="video/*"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      />
 
-        {files && files.length > 0 && (
-          <div className="selected-files">
-            <h3>Selected files:</h3>
-            <ul>
-              {Array.from(files).map((file) => (
-                <li key={file.name}>{file.name}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+      <button onClick={upload} disabled={!file}>
+        Upload
+      </button>
 
-        <button
-          className="btn primary"
-          onClick={handleUpload}
-          disabled={!files || files.length === 0 || status === "uploading"}
-        >
-          {status === "uploading" ? "Uploading..." : "Upload"}
-        </button>
-
-        {message && (
-          <p className={status === "error" ? "error" : "success"}>{message}</p>
-        )}
-      </div>
+      {message && <p>{message}</p>}
     </main>
   );
 }
