@@ -35,7 +35,7 @@ export default function Dashboard() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        caption: updated.caption,
+        caption: updated.tiktok.caption,
         scheduledAt: updated.scheduledAt,
       }),
     });

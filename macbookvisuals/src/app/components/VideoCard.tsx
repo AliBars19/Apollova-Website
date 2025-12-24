@@ -16,7 +16,8 @@ export default function VideoCard({
   onPublish,
   onDelete,
 }: VideoCardProps) {
-  const [caption, setCaption] = useState(video.caption);
+  // Use tiktok.caption instead of the old caption field
+  const [caption, setCaption] = useState(video.tiktok.caption);
   const [scheduledAt, setScheduledAt] = useState(video.scheduledAt ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -28,10 +29,20 @@ export default function VideoCard({
 
     setSaving(true);
 
+    // Update the video object with the new structure
     const updated: Video = {
       ...video,
-      caption,
       scheduledAt: scheduledAt || undefined,
+      // Update the tiktok caption
+      tiktok: {
+        ...video.tiktok,
+        caption: caption,
+      },
+      // You can also update YouTube description to match if you want
+      youtube: {
+        ...video.youtube,
+        description: caption, // Keep YouTube description in sync
+      },
     };
 
     try {
