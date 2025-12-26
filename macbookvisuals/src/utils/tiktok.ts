@@ -1,7 +1,6 @@
 // src/lib/tiktok.ts
 import { getValidTikTokToken } from './tokenManager';
 import fs from 'fs';
-import path from 'path';
 
 export interface TikTokPublishResult {
   success: boolean;
@@ -29,6 +28,13 @@ export async function publishToTikTok(
 
     console.log(`Video size: ${(videoSize / 1024 / 1024).toFixed(2)} MB`);
 
+    // TikTok chunk size limits (64MB max per chunk)
+    const MAX_CHUNK_SIZE = 64 * 1024 * 1024; // 64MB
+    const chunkSize = Math.min(videoSize, MAX_CHUNK_SIZE);
+    const totalChunks = Math.ceil(videoSize / chunkSize);
+
+    console.log(`Uploading in ${totalChunks} chunk(s) of ${(chunkSize / 1024 / 1024).toFixed(2)} MB each`);
+
     // Step 1: Initialize upload
     const initResponse = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
       method: 'POST',
@@ -48,8 +54,8 @@ export async function publishToTikTok(
         source_info: {
           source: 'FILE_UPLOAD',
           video_size: videoSize,
-          chunk_size: videoSize, // Upload in one chunk for simplicity
-          total_chunk_count: 1,
+          chunk_size: chunkSize,
+          total_chunk_count: totalChunks,
         },
       }),
     });
@@ -66,27 +72,38 @@ export async function publishToTikTok(
 
     console.log('Upload initialized, publish_id:', publishId);
 
-    // Step 2: Upload video to the provided URL
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'video/mp4',
-        'Content-Length': videoSize.toString(),
-      },
-      body: videoBuffer,
-    });
+    // Step 2: Upload video chunks
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * chunkSize;
+      const end = Math.min(start + chunkSize, videoSize);
+      const chunk = videoBuffer.slice(start, end);
 
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.text();
-      console.error('TikTok upload failed:', errorData);
-      throw new Error(`TikTok upload failed: ${errorData}`);
+      console.log(`Uploading chunk ${i + 1}/${totalChunks}...`);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'video/mp4',
+          'Content-Range': `bytes ${start}-${end - 1}/${videoSize}`,
+          'Content-Length': chunk.length.toString(),
+        },
+        body: chunk,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.text();
+        console.error(`TikTok chunk ${i + 1} upload failed:`, errorData);
+        throw new Error(`TikTok chunk upload failed: ${errorData}`);
+      }
+
+      console.log(`✓ Chunk ${i + 1}/${totalChunks} uploaded`);
     }
 
-    console.log('Video uploaded successfully');
+    console.log('All chunks uploaded successfully');
 
     // Step 3: Check publish status
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 30; // Increased for larger videos
     let publishStatus = 'PROCESSING';
     let videoId = '';
 
