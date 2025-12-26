@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Video } from "../types";
 import VideoCard from "../components/VideoCard";
 import LogoutButton from "../components/LogoutButton";
+import ConnectionStatus from "../components/ConnectionStatus";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -134,6 +135,8 @@ export default function Dashboard() {
         <h1 className="title">Your Video Dashboard</h1>
         <LogoutButton />
       </div>
+
+      <ConnectionStatus/>
 
       {loading && <p>Loading videos...</p>}
       {error && <p className="error">Error: {error}</p>}
