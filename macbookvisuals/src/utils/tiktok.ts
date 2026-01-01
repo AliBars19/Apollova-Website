@@ -9,10 +9,6 @@ export interface TikTokPublishResult {
   error?: string;
 }
 
-/**
- * Publishes video to TikTok using the CORRECT endpoint from official docs
- * Endpoint: /v2/post/publish/inbox/video/init/
- */
 export async function publishToTikTok(
   videoPath: string,
   caption: string
@@ -31,8 +27,8 @@ export async function publishToTikTok(
     }
 
     // Chunk parameters - upload entire file as one chunk
-    const chunkSize = videoSize;
-    const totalChunkCount = 1;
+    const chunkSize = 17000000;
+    const totalChunkCount = 7;
 
     console.log('Initializing upload...');
     console.log(`Chunk size: ${chunkSize}, Total chunks: ${totalChunkCount}`);
