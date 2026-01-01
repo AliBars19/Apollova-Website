@@ -9,14 +9,18 @@ export interface TikTokPublishResult {
   error?: string;
 }
 
+/**
+ * Publishes a video to TikTok using Direct Post API
+ * This is the API you have approved (video.publish scope)
+ */
 export async function publishToTikTok(
   videoPath: string,
   caption: string
 ): Promise<TikTokPublishResult> {
   try {
-    console.log('Publishing to TikTok:', videoPath);
+    console.log('Publishing to TikTok using Direct Post API:', videoPath);
 
-    // Get valid access token (auto-refreshes if needed)
+    // Get valid access token
     const accessToken = await getValidTikTokToken();
 
     // Read video file
@@ -25,51 +29,57 @@ export async function publishToTikTok(
 
     console.log(`Video size: ${(videoSize / 1024 / 1024).toFixed(2)} MB`);
 
-    // TikTok file size limit check (usually 287MB for production)
+    // TikTok file size limit
     if (videoSize > 287 * 1024 * 1024) {
       throw new Error('Video exceeds TikTok file size limit (287MB)');
     }
 
-    // Step 1: Initialize upload (single chunk)
-    console.log('Initializing TikTok upload...');
-    const initResponse = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+    // Step 1: Initialize Direct Post
+    console.log('Initializing TikTok Direct Post...');
+    
+    const initBody = {
+      post_info: {
+        title: caption.substring(0, 150), // Max 150 chars
+        privacy_level: 'PUBLIC_TO_EVERYONE',
+        disable_duet: false,
+        disable_comment: false,
+        disable_stitch: false,
+      },
+      source_info: {
+        source: 'FILE_UPLOAD',
+      },
+      post_mode: 'DIRECT_POST', // This is the key difference!
+      media_type: 'VIDEO',
+    };
+
+    console.log('Request:', JSON.stringify(initBody, null, 2));
+
+    const initResponse = await fetch('https://open.tiktokapis.com/v2/post/publish/inbox/video/', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json; charset=UTF-8',
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        post_info: {
-          title: caption,
-          privacy_level: 'PUBLIC_TO_EVERYONE', // Change to 'SELF_ONLY' for drafts
-          disable_duet: false,
-          disable_comment: false,
-          disable_stitch: false,
-          video_cover_timestamp_ms: 1000,
-        },
-        source_info: {
-          source: 'FILE_UPLOAD',
-          video_size: videoSize,
-          chunk_size: videoSize, // Upload entire file in one chunk
-          total_chunk_count: 1,
-        },
-      }),
+      body: JSON.stringify(initBody),
     });
 
+    const initText = await initResponse.text();
+    console.log('Response status:', initResponse.status);
+    console.log('Response:', initText);
+
     if (!initResponse.ok) {
-      const errorData = await initResponse.text();
-      console.error('TikTok init failed:', errorData);
-      throw new Error(`TikTok init failed: ${errorData}`);
+      throw new Error(`TikTok Direct Post init failed: ${initText}`);
     }
 
-    const initData = await initResponse.json();
-    const uploadUrl = initData.data.upload_url;
+    const initData = JSON.parse(initText);
     const publishId = initData.data.publish_id;
+    const uploadUrl = initData.data.upload_url;
 
-    console.log('✓ Upload initialized, publish_id:', publishId);
+    console.log('✓ Direct Post initialized');
+    console.log('Publish ID:', publishId);
 
-    // Step 2: Upload video to the provided URL
-    console.log('Uploading video to TikTok...');
+    // Step 2: Upload video file
+    console.log('Uploading video...');
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers: {
@@ -79,29 +89,32 @@ export async function publishToTikTok(
       body: videoBuffer,
     });
 
+    console.log('Upload status:', uploadResponse.status);
+
     if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.text();
-      console.error('TikTok upload failed:', errorData);
-      throw new Error(`TikTok upload failed: ${errorData}`);
+      const uploadError = await uploadResponse.text();
+      console.error('Upload failed:', uploadError);
+      throw new Error(`Video upload failed: ${uploadError}`);
     }
 
-    console.log('✓ Video uploaded successfully');
+    console.log('✓ Video uploaded');
 
-    // Step 3: Check publish status
-    console.log('Checking publish status...');
+    // Step 3: Wait for processing and get video ID
+    console.log('Waiting for TikTok to process video...');
+    
     let attempts = 0;
-    const maxAttempts = 40; // Increased for larger videos (2 minutes max)
-    let publishStatus = 'PROCESSING';
+    const maxAttempts = 40;
     let videoId = '';
-
-    while (attempts < maxAttempts && publishStatus === 'PROCESSING') {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-
-      const statusResponse = await fetch('https://open.tiktokapis.com/v2/post/publish/status/fetch/', {
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Check status
+      const statusResponse = await fetch(`https://open.tiktokapis.com/v2/post/publish/status/fetch/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           publish_id: publishId,
@@ -110,42 +123,40 @@ export async function publishToTikTok(
 
       if (statusResponse.ok) {
         const statusData = await statusResponse.json();
-        publishStatus = statusData.data.status;
+        const status = statusData.data.status;
         
-        if (statusData.data.publicaly_available_post_id) {
-          videoId = statusData.data.publicaly_available_post_id[0];
-        }
+        console.log(`Check ${attempts + 1}/${maxAttempts}: ${status}`);
 
-        console.log(`Attempt ${attempts + 1}/${maxAttempts}: Status = ${publishStatus}`);
-
-        if (publishStatus === 'PUBLISH_COMPLETE') {
-          console.log('✓ TikTok publish complete! Video ID:', videoId);
+        if (status === 'PUBLISH_COMPLETE') {
+          if (statusData.data.publicaly_available_post_id) {
+            videoId = statusData.data.publicaly_available_post_id[0];
+          }
+          
+          console.log('✓ Published! Video ID:', videoId);
+          
           return {
             success: true,
             videoId: videoId,
             publishId: publishId,
           };
-        } else if (publishStatus === 'FAILED') {
-          // Get failure reason if available
-          const failReason = statusData.data.fail_reason || 'Unknown error';
-          throw new Error(`TikTok publish failed: ${failReason}`);
+        } else if (status === 'FAILED') {
+          const reason = statusData.data.fail_reason || 'Unknown';
+          throw new Error(`Publish failed: ${reason}`);
         }
       }
-
+      
       attempts++;
     }
 
-    // Timeout - still processing
-    console.log('⏱ TikTok publish still processing after max attempts');
-    console.log('Video may still be processing - check TikTok app');
+    // Timeout
     return {
       success: false,
       publishId: publishId,
-      error: 'Publish timeout - video still processing (check TikTok app)',
+      error: 'Timeout waiting for publish',
     };
 
   } catch (error) {
-    console.error('TikTok publish error:', error);
+    console.error('TikTok Direct Post error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -154,7 +165,7 @@ export async function publishToTikTok(
 }
 
 /**
- * Gets TikTok user info (for testing authentication)
+ * Gets TikTok user info
  */
 export async function getTikTokUserInfo(): Promise<any> {
   try {
