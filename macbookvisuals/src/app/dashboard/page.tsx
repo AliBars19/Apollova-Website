@@ -6,6 +6,7 @@ import type { Video } from "../types";
 import VideoCard from "../components/VideoCard";
 import LogoutButton from "../components/LogoutButton";
 import ConnectionStatus from "../components/ConnectionStatus";
+import TikTokPublishDrawer, { TikTokPublishData } from "../components/TikTokPublishDrawer";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -13,8 +14,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
+  
+  // TikTok publish drawer state
+  const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
-  // Check authentication on page load
   useEffect(() => {
     checkAuth();
   }, []);
@@ -25,10 +29,8 @@ export default function Dashboard() {
       const data = await response.json();
       
       if (!data.authenticated) {
-        // Not logged in, redirect to login
         router.push('/login');
       } else {
-        // Authenticated, load videos
         setAuthChecking(false);
         fetchVideos();
       }
@@ -89,16 +91,27 @@ export default function Dashboard() {
     setVideos((prev) => prev.filter((v) => v.id !== videoId));
   };
 
-  const handlePublish = async (videoId: string) => {
+  const handlePublishClick = (videoId: string) => {
+    const video = videos.find(v => v.id === videoId);
+    if (video) {
+      setSelectedVideo(video);
+      setPublishDrawerOpen(true);
+    }
+  };
+
+  const handleTikTokPublish = async (publishData: TikTokPublishData) => {
     try {
-      const res = await fetch(`/api/videos/${videoId}/publish`, {
+      const res = await fetch(`/api/videos/${publishData.videoId}/publish`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform: 'tiktok',
+          publishData,
+        }),
       });
 
       if (!res.ok) {
-        console.error('Failed to publish video');
-        alert('Failed to publish video');
-        return;
+        throw new Error('Failed to publish video');
       }
 
       const data = await res.json();
@@ -106,18 +119,13 @@ export default function Dashboard() {
       // Check if video was cleaned up (deleted)
       if (data.cleaned) {
         console.log('✓ Video published and removed from server');
-
-        // Remove from local state (video no longer exists)
-        setVideos((prev) => prev.filter((v) => v.id !== videoId));
-
-        // Show success message
-        alert(`✓ Published successfully to both platforms!\n\nVideo has been removed from server.\n\nTikTok: ${data.results.tiktok.videoId}\nYouTube: ${data.results.youtube.videoId}`);
-
+        setVideos((prev) => prev.filter((v) => v.id === publishData.videoId));
+        alert(`✓ Published successfully to TikTok!\n\nVideo has been removed from server.`);
       } else {
-        // Video still exists (partial failure or kept for some reason)
+        // Video still exists (partial failure or kept)
         setVideos((prev) =>
           prev.map((v) =>
-            v.id === videoId 
+            v.id === publishData.videoId 
               ? { 
                   ...v, 
                   status: data.video.status,
@@ -128,13 +136,10 @@ export default function Dashboard() {
           )
         );
 
-        // Show appropriate message
-        if (data.results.tiktok.success && data.results.youtube.success) {
-          alert('✓ Published to both platforms!\n\nVideo kept on server for review.');
-        } else if (data.results.tiktok.success || data.results.youtube.success) {
-          alert('⚠ Partial success - one platform failed.\n\nVideo kept on server. Check dashboard for details.');
+        if (data.results?.tiktok?.success) {
+          alert('✓ Published to TikTok successfully!');
         } else {
-          alert('✗ Failed to publish to both platforms.\n\nVideo kept on server. Check console for errors.');
+          alert('✗ Failed to publish to TikTok.\n\nCheck console for errors.');
         }
       }
 
@@ -144,7 +149,6 @@ export default function Dashboard() {
     }
   };
 
-  // Show loading while checking auth
   if (authChecking) {
     return (
       <main className="dashboard">
@@ -182,11 +186,22 @@ export default function Dashboard() {
             key={video.id}
             video={video}
             onSave={handleSave}
-            onPublish={handlePublish}
+            onPublish={handlePublishClick}
             onDelete={handleDelete}
           />
         ))}
       </div>
+
+      {/* TikTok Publish Drawer */}
+      <TikTokPublishDrawer
+        video={selectedVideo}
+        isOpen={publishDrawerOpen}
+        onClose={() => {
+          setPublishDrawerOpen(false);
+          setSelectedVideo(null);
+        }}
+        onPublish={handleTikTokPublish}
+      />
     </main>
   );
 }

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import type { Video } from '@/app/types';
-import { publishToTikTok } from '@/utils/tiktok';
+import { publishToTikTokCompliant } from '@/utils/tiktok';
 import { publishToYouTube } from '@/utils/youtube';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'videos.json');
@@ -11,14 +11,14 @@ const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 /**
  * POST /api/videos/:id/publish
- * Publishes video to both TikTok and YouTube
- * Deletes video file and metadata after successful upload to both platforms
+ * Publishes video with full TikTok compliance support
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
+  const body = await req.json();
 
   if (!fs.existsSync(DATA_FILE)) {
     return NextResponse.json({ error: 'No videos data' }, { status: 404 });
@@ -33,11 +33,9 @@ export async function POST(
 
   console.log('========================================');
   console.log('PUBLISH requested for:', video.filename);
-  console.log('TikTok caption:', video.tiktok.caption);
-  console.log('YouTube title:', video.youtube.title);
+  console.log('Platform:', body.platform || 'both');
   console.log('========================================');
 
-  // Get video file path
   const videoPath = path.join(UPLOAD_DIR, video.filename);
 
   if (!fs.existsSync(videoPath)) {
@@ -47,119 +45,126 @@ export async function POST(
     );
   }
 
-  // Update status to "publishing"
   video.status = 'publishing';
   fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
 
-  // Track results
   let tiktokSuccess = false;
   let youtubeSuccess = false;
 
-  // Publish to TikTok
-  try {
-    console.log('\n📱 Publishing to TikTok...');
-    const tiktokResult = await publishToTikTok(
-      videoPath,
-      video.tiktok.caption
-    );
+  // Publish to TikTok with compliance data
+  if (!body.platform || body.platform === 'tiktok' || body.platform === 'both') {
+    try {
+      console.log('\n📱 Publishing to TikTok with compliance data...');
+      const tiktokResult = await publishToTikTokCompliant(
+        videoPath,
+        body.publishData || {
+          title: video.tiktok.caption,
+          privacyLevel: 'PUBLIC_TO_EVERYONE',
+          disableComment: false,
+          disableDuet: false,
+          disableStitch: false,
+          commercialContent: {
+            enabled: false,
+            yourBrand: false,
+            brandedContent: false,
+          },
+        }
+      );
 
-    if (tiktokResult.success) {
-      console.log('✓ TikTok publish succeeded');
-      video.tiktok.status = 'published';
-      video.tiktok.videoId = tiktokResult.videoId;
-      video.tiktok.publishedAt = new Date().toISOString();
-      tiktokSuccess = true;
-    } else {
-      console.log('✗ TikTok publish failed:', tiktokResult.error);
+      if (tiktokResult.success) {
+        console.log('✓ TikTok publish succeeded');
+        video.tiktok.status = 'published';
+        video.tiktok.videoId = tiktokResult.videoId;
+        video.tiktok.publishedAt = new Date().toISOString();
+        tiktokSuccess = true;
+      } else {
+        console.log('✗ TikTok publish failed:', tiktokResult.error);
+        video.tiktok.status = 'failed';
+        video.tiktok.error = tiktokResult.error;
+      }
+    } catch (error) {
+      console.error('TikTok publish error:', error);
       video.tiktok.status = 'failed';
-      video.tiktok.error = tiktokResult.error;
+      video.tiktok.error = error instanceof Error ? error.message : 'Unknown error';
     }
-  } catch (error) {
-    console.error('TikTok publish error:', error);
-    video.tiktok.status = 'failed';
-    video.tiktok.error = error instanceof Error ? error.message : 'Unknown error';
   }
 
   // Publish to YouTube
-  try {
-    console.log('\n📺 Publishing to YouTube...');
-    const youtubeResult = await publishToYouTube(
-      videoPath,
-      video.youtube.title,
-      video.youtube.description,
-      video.youtube.tags,
-      video.youtube.category,
-      video.youtube.privacy
-    );
+  if (!body.platform || body.platform === 'youtube' || body.platform === 'both') {
+    try {
+      console.log('\n📺 Publishing to YouTube...');
+      const youtubeResult = await publishToYouTube(
+        videoPath,
+        video.youtube.title,
+        video.youtube.description,
+        video.youtube.tags,
+        video.youtube.category,
+        video.youtube.privacy
+      );
 
-    if (youtubeResult.success) {
-      console.log('✓ YouTube publish succeeded');
-      video.youtube.status = 'published';
-      video.youtube.videoId = youtubeResult.videoId;
-      video.youtube.publishedAt = new Date().toISOString();
-      youtubeSuccess = true;
-    } else {
-      console.log('✗ YouTube publish failed:', youtubeResult.error);
+      if (youtubeResult.success) {
+        console.log('✓ YouTube publish succeeded');
+        video.youtube.status = 'published';
+        video.youtube.videoId = youtubeResult.videoId;
+        video.youtube.publishedAt = new Date().toISOString();
+        youtubeSuccess = true;
+      } else {
+        console.log('✗ YouTube publish failed:', youtubeResult.error);
+        video.youtube.status = 'failed';
+        video.youtube.error = youtubeResult.error;
+      }
+    } catch (error) {
+      console.error('YouTube publish error:', error);
       video.youtube.status = 'failed';
-      video.youtube.error = youtubeResult.error;
+      video.youtube.error = error instanceof Error ? error.message : 'Unknown error';
     }
-  } catch (error) {
-    console.error('YouTube publish error:', error);
-    video.youtube.status = 'failed';
-    video.youtube.error = error instanceof Error ? error.message : 'Unknown error';
   }
 
   // Update overall video status
-  if (tiktokSuccess && youtubeSuccess) {
+  const platformsAttempted = body.platform === 'tiktok' || body.platform === 'youtube' ? 1 : 2;
+  const platformsSucceeded = (tiktokSuccess ? 1 : 0) + (youtubeSuccess ? 1 : 0);
+
+  if (platformsSucceeded === platformsAttempted) {
     video.status = 'published';
-    console.log('\n✓✓ Both platforms published successfully!');
-  } else if (tiktokSuccess || youtubeSuccess) {
-    video.status = 'published'; // Partial success
-    console.log('\n⚠ Partial success - one platform failed');
+    console.log('\n✓ All platforms published successfully!');
+  } else if (platformsSucceeded > 0) {
+    video.status = 'published';
+    console.log('\n⚠ Partial success');
   } else {
     video.status = 'failed';
-    console.log('\n✗✗ Both platforms failed');
+    console.log('\n✗ All platforms failed');
   }
 
-  // Save updated video data
   fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
 
-  // ========================================
-  // AUTO-CLEANUP: Delete video after successful publish
-  // ========================================
+  // Auto-cleanup if both succeeded
   let cleanupPerformed = false;
   
-  if (tiktokSuccess && youtubeSuccess) {
+  if (tiktokSuccess && youtubeSuccess && platformsAttempted === 2) {
     try {
-      console.log('\n  Both platforms successful - cleaning up video file...');
+      console.log('\n🗑️  Both platforms successful - cleaning up...');
       
-      // Delete video file
       if (fs.existsSync(videoPath)) {
         fs.unlinkSync(videoPath);
-        console.log('✓ Video file deleted:', video.filename);
+        console.log('✓ Video file deleted');
       }
 
-      // Remove from videos.json
       videos = videos.filter((v) => v.id !== id);
       fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
-      console.log(' Metadata removed from database');
+      console.log('✓ Metadata removed');
       
       cleanupPerformed = true;
-      console.log(' Cleanup complete - video removed from server');
       
     } catch (cleanupError) {
-      console.error('  Cleanup failed:', cleanupError);
-      // Don't fail the whole request if cleanup fails
+      console.error('⚠️  Cleanup failed:', cleanupError);
     }
-  } else {
-    console.log('\n⏸  Keeping video file (not all platforms succeeded)');
   }
 
   console.log('========================================\n');
 
   return NextResponse.json({
     ok: true,
-    video: cleanupPerformed ? null : video, // null if deleted
+    video: cleanupPerformed ? null : video,
     cleaned: cleanupPerformed,
     results: {
       tiktok: {
@@ -173,12 +178,5 @@ export async function POST(
         error: video.youtube.error,
       },
     },
-    message: cleanupPerformed 
-      ? 'Published to both platforms successfully and removed from server'
-      : tiktokSuccess && youtubeSuccess
-      ? 'Published to both platforms successfully'
-      : tiktokSuccess || youtubeSuccess
-      ? 'Published to one platform (check errors for failed platform)'
-      : 'Failed to publish to both platforms',
   });
 }
