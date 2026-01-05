@@ -219,6 +219,15 @@ export default function TikTokPublishDrawer({
           background: linear-gradient(to bottom, #00f5ff, #ff0050);
           border-radius: 4px;
         }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
       `}</style>
 
       {/* Backdrop */}
@@ -307,15 +316,6 @@ export default function TikTokPublishDrawer({
                 }}/>
               </div>
               <p style={{ color: '#888', animation: 'pulse 2s ease-in-out infinite' }}>Loading creator info...</p>
-              <style jsx>{`
-                @keyframes spin {
-                  to { transform: rotate(360deg); }
-                }
-                @keyframes pulse {
-                  0%, 100% { opacity: 1; }
-                  50% { opacity: 0.5; }
-                }
-              `}</style>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
