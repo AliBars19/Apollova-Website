@@ -44,22 +44,16 @@ export default function TikTokPublishDrawer({
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   
-  // Form state
   const [title, setTitle] = useState('');
   const [privacyLevel, setPrivacyLevel] = useState('');
   const [allowComment, setAllowComment] = useState(false);
   const [allowDuet, setAllowDuet] = useState(false);
   const [allowStitch, setAllowStitch] = useState(false);
-  
-  // Commercial content state
   const [commercialEnabled, setCommercialEnabled] = useState(false);
   const [yourBrand, setYourBrand] = useState(false);
   const [brandedContent, setBrandedContent] = useState(false);
-  
-  // Consent state
   const [hasConsented, setHasConsented] = useState(false);
 
-  // Load creator info when drawer opens
   useEffect(() => {
     if (isOpen && video) {
       loadCreatorInfo();
@@ -67,10 +61,9 @@ export default function TikTokPublishDrawer({
     }
   }, [isOpen, video]);
 
-  // Reset form when closed
   useEffect(() => {
     if (!isOpen) {
-      resetForm();
+      setTimeout(resetForm, 300);
     }
   }, [isOpen]);
 
@@ -82,8 +75,6 @@ export default function TikTokPublishDrawer({
       
       if (data.ok) {
         setCreatorInfo(data.creatorInfo);
-      } else {
-        console.error('Failed to load creator info:', data.error);
       }
     } catch (error) {
       console.error('Creator info error:', error);
@@ -132,18 +123,10 @@ export default function TikTokPublishDrawer({
   };
 
   const canPublish = () => {
-    // Must have title
     if (!title.trim()) return false;
-    
-    // Must select privacy
     if (!privacyLevel) return false;
-    
-    // If commercial enabled, must select at least one option
     if (commercialEnabled && !yourBrand && !brandedContent) return false;
-    
-    // Must consent
     if (!hasConsented) return false;
-    
     return true;
   };
 
@@ -151,291 +134,339 @@ export default function TikTokPublishDrawer({
     if (!commercialEnabled) {
       return "By posting, you agree to TikTok's Music Usage Confirmation";
     }
-    
     if (brandedContent) {
       return "By posting, you agree to TikTok's Branded Content Policy and Music Usage Confirmation";
     }
-    
     return "By posting, you agree to TikTok's Music Usage Confirmation";
   };
 
   const getCommercialLabel = () => {
-    if (yourBrand && brandedContent) {
-      return "Your photo/video will be labeled as 'Paid partnership'";
-    }
-    if (brandedContent) {
-      return "Your photo/video will be labeled as 'Paid partnership'";
-    }
-    if (yourBrand) {
-      return "Your photo/video will be labeled as 'Promotional content'";
-    }
+    if (yourBrand && brandedContent) return "Your photo/video will be labeled as 'Paid partnership'";
+    if (brandedContent) return "Your photo/video will be labeled as 'Paid partnership'";
+    if (yourBrand) return "Your photo/video will be labeled as 'Promotional content'";
     return null;
   };
 
-  // Branded content requires public/friends privacy
-  const isBrandedContentAllowed = () => {
-    if (privacyLevel === 'SELF_ONLY') return false;
-    return true;
-  };
+  const isBrandedContentAllowed = () => privacyLevel !== 'SELF_ONLY';
 
-  if (!isOpen || !video) return null;
+  if (!video) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 z-40 transition-opacity"
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-[100] ${
+          isOpen ? 'opacity-60' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
-        style={{ opacity: isOpen ? 1 : 0 }}
       />
       
-      {/* Drawer */}
+      {/* Drawer Container */}
       <div 
-        className="fixed right-0 top-0 bottom-0 w-full md:w-[600px] bg-[#0a0a0f] z-50 shadow-2xl transform transition-transform duration-300 overflow-y-auto"
-        style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
+        className={`fixed top-0 right-0 h-full w-full sm:w-[90vw] md:w-[600px] bg-gradient-to-b from-[#0d0d15] to-[#050509] z-[101] transform transition-transform duration-500 ease-out shadow-2xl ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        style={{
+          boxShadow: '-10px 0 50px rgba(0, 0, 0, 0.5)',
+        }}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-[#0a0a0f] border-b border-white/10 p-6 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-bold">Post to TikTok</h2>
+        {/* Fixed Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-[#0d0d15] to-[#050509] border-b border-cyan-500/20 px-6 py-5 flex items-center justify-between z-10 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-pink-500 flex items-center justify-center animate-pulse">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">
+                Post to TikTok
+              </h2>
+              <p className="text-xs text-gray-500">Direct Post API</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors p-2"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center group"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round"/>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400 group-hover:text-white transition-colors">
+              <path d="M18 6L6 18M6 6l12 12" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white"/>
-          </div>
-        ) : (
-          <div className="p-6 space-y-8">
-            {/* Creator Info */}
-            {creatorInfo && (
-              <div className="flex items-center gap-3 p-4 bg-white/5 rounded-lg">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#25F4EE] to-[#FE2C55] p-0.5">
-                  <div className="w-full h-full rounded-full bg-[#0a0a0f] flex items-center justify-center text-lg font-bold">
-                    {creatorInfo.creator_username[0].toUpperCase()}
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto h-[calc(100vh-80px)] px-6 pb-6">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"/>
+                <div className="absolute inset-0 w-16 h-16 border-4 border-pink-500/20 border-b-pink-400 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}/>
+              </div>
+              <p className="text-gray-400 animate-pulse">Loading creator info...</p>
+            </div>
+          ) : (
+            <div className="space-y-6 pt-6">
+              {/* Creator Info Card */}
+              {creatorInfo && (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 to-pink-500/10 p-4 border border-cyan-500/20">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl"/>
+                  <div className="relative flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-pink-500 p-[2px]">
+                      <div className="w-full h-full rounded-2xl bg-[#0d0d15] flex items-center justify-center">
+                        <span className="text-2xl font-black bg-gradient-to-br from-cyan-400 to-pink-400 bg-clip-text text-transparent">
+                          {creatorInfo.creator_username[0].toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Posting as</p>
+                      <p className="text-lg font-bold text-white">@{creatorInfo.creator_username}</p>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div className="text-sm text-white/60">Posting to</div>
-                  <div className="font-semibold">@{creatorInfo.creator_username}</div>
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* Video Preview */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Video Preview</label>
-              <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                <video 
-                  src={encodeURI(video.url)}
-                  controls
-                  className="w-full h-full"
-                />
-              </div>
-              <p className="text-xs text-white/40 mt-2">{video.filename}</p>
-            </div>
-
-            {/* Title (Caption) */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Title <span className="text-red-400">*</span>
-              </label>
-              <textarea
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={150}
-                rows={3}
-                placeholder="Add a caption..."
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-[#25F4EE] transition-colors resize-none"
-              />
-              <div className="text-xs text-white/40 mt-1 text-right">{title.length}/150</div>
-            </div>
-
-            {/* Privacy Level */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Who can view this video? <span className="text-red-400">*</span>
-              </label>
-              <select
-                value={privacyLevel}
-                onChange={(e) => {
-                  setPrivacyLevel(e.target.value);
-                  // If switching to SELF_ONLY, disable branded content
-                  if (e.target.value === 'SELF_ONLY' && brandedContent) {
-                    setBrandedContent(false);
-                  }
-                }}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-[#25F4EE] transition-colors"
-              >
-                <option value="">Select privacy level</option>
-                {creatorInfo?.privacy_level_options.map((level) => (
-                  <option key={level} value={level}>
-                    {level === 'PUBLIC_TO_EVERYONE' ? 'Everyone' :
-                     level === 'MUTUAL_FOLLOW_FRIENDS' ? 'Friends' :
-                     level === 'SELF_ONLY' ? 'Only me' :
-                     level}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Interaction Settings */}
-            <div>
-              <label className="block text-sm font-medium mb-3">Allow others to</label>
+              {/* Video Preview */}
               <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={allowComment}
-                    onChange={(e) => setAllowComment(e.target.checked)}
-                    disabled={creatorInfo?.comment_disabled}
-                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-[#25F4EE] focus:ring-[#25F4EE] disabled:opacity-50"
+                <label className="block text-sm font-bold text-gray-300 uppercase tracking-wider">Video Preview</label>
+                <div className="relative rounded-2xl overflow-hidden bg-black border-2 border-gray-800 hover:border-cyan-500/50 transition-all duration-300 group">
+                  <video 
+                    src={encodeURI(video.url)}
+                    controls
+                    className="w-full aspect-video"
                   />
-                  <span className={creatorInfo?.comment_disabled ? 'text-white/40' : ''}>
-                    Comment
-                  </span>
-                </label>
-                
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={allowDuet}
-                    onChange={(e) => setAllowDuet(e.target.checked)}
-                    disabled={creatorInfo?.duet_disabled}
-                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-[#25F4EE] focus:ring-[#25F4EE] disabled:opacity-50"
-                  />
-                  <span className={creatorInfo?.duet_disabled ? 'text-white/40' : ''}>
-                    Duet
-                  </span>
-                </label>
-                
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={allowStitch}
-                    onChange={(e) => setAllowStitch(e.target.checked)}
-                    disabled={creatorInfo?.stitch_disabled}
-                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-[#25F4EE] focus:ring-[#25F4EE] disabled:opacity-50"
-                  />
-                  <span className={creatorInfo?.stitch_disabled ? 'text-white/40' : ''}>
-                    Stitch
-                  </span>
-                </label>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"/>
+                </div>
+                <p className="text-xs text-gray-600 font-mono">{video.filename}</p>
               </div>
-            </div>
 
-            {/* Commercial Content Disclosure */}
-            <div className="border-t border-white/10 pt-6">
-              <label className="flex items-center justify-between cursor-pointer mb-4">
-                <div>
-                  <div className="font-medium">Disclose commercial content</div>
-                  <div className="text-sm text-white/60">
-                    Turn on if your content promotes yourself, a brand, product, or service
+              {/* Title Field */}
+              <div className="space-y-3">
+                <label className="block text-sm font-bold text-gray-300 uppercase tracking-wider">
+                  Title <span className="text-pink-400">*</span>
+                </label>
+                <div className="relative">
+                  <textarea
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={150}
+                    rows={3}
+                    placeholder="Add your caption here..."
+                    className="w-full px-4 py-3 bg-white/5 border-2 border-gray-800 rounded-xl focus:outline-none focus:border-cyan-400 transition-all duration-300 resize-none text-white placeholder-gray-600 font-medium"
+                  />
+                  <div className="absolute bottom-3 right-3 text-xs font-mono">
+                    <span className={title.length > 140 ? 'text-pink-400' : 'text-gray-600'}>
+                      {title.length}
+                    </span>
+                    <span className="text-gray-700">/150</span>
                   </div>
                 </div>
-                <div 
-                  onClick={() => {
-                    const newValue = !commercialEnabled;
-                    setCommercialEnabled(newValue);
-                    if (!newValue) {
-                      setYourBrand(false);
+              </div>
+
+              {/* Privacy Level */}
+              <div className="space-y-3">
+                <label className="block text-sm font-bold text-gray-300 uppercase tracking-wider">
+                  Who can view this video? <span className="text-pink-400">*</span>
+                </label>
+                <select
+                  value={privacyLevel}
+                  onChange={(e) => {
+                    setPrivacyLevel(e.target.value);
+                    if (e.target.value === 'SELF_ONLY' && brandedContent) {
                       setBrandedContent(false);
                     }
                   }}
-                  className={`relative w-14 h-7 rounded-full transition-colors cursor-pointer ${
-                    commercialEnabled ? 'bg-[#25F4EE]' : 'bg-white/20'
+                  className="w-full px-4 py-3 bg-white/5 border-2 border-gray-800 rounded-xl focus:outline-none focus:border-cyan-400 transition-all duration-300 text-white appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2300F5FF' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 1rem center',
+                  }}
+                >
+                  <option value="" disabled>Select privacy level</option>
+                  {creatorInfo?.privacy_level_options.map((level) => (
+                    <option key={level} value={level} className="bg-[#0d0d15]">
+                      {level === 'PUBLIC_TO_EVERYONE' ? '🌍 Everyone' :
+                       level === 'MUTUAL_FOLLOW_FRIENDS' ? '👥 Friends' :
+                       level === 'SELF_ONLY' ? '🔒 Only me' :
+                       level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Interaction Settings */}
+              <div className="space-y-3">
+                <label className="block text-sm font-bold text-gray-300 uppercase tracking-wider">Allow others to</label>
+                <div className="space-y-3 bg-white/5 border border-gray-800 rounded-xl p-4">
+                  {[
+                    { id: 'comment', label: 'Comment', checked: allowComment, onChange: setAllowComment, disabled: creatorInfo?.comment_disabled },
+                    { id: 'duet', label: 'Duet', checked: allowDuet, onChange: setAllowDuet, disabled: creatorInfo?.duet_disabled },
+                    { id: 'stitch', label: 'Stitch', checked: allowStitch, onChange: setAllowStitch, disabled: creatorInfo?.stitch_disabled },
+                  ].map((item) => (
+                    <label key={item.id} className={`flex items-center gap-3 cursor-pointer group ${item.disabled ? 'opacity-40' : ''}`}>
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          onChange={(e) => item.onChange(e.target.checked)}
+                          disabled={item.disabled}
+                          className="sr-only"
+                        />
+                        <div className={`w-6 h-6 rounded-lg border-2 transition-all duration-300 flex items-center justify-center ${
+                          item.checked 
+                            ? 'bg-gradient-to-br from-cyan-400 to-pink-400 border-transparent' 
+                            : 'border-gray-700 group-hover:border-cyan-500'
+                        }`}>
+                          {item.checked && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                              <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-white font-medium">{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Commercial Content */}
+              <div className="space-y-4 border-t-2 border-gray-800 pt-6">
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex-1">
+                    <div className="text-base font-bold text-white group-hover:text-cyan-400 transition-colors">
+                      Disclose commercial content
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Turn on if promoting yourself, a brand, or product
+                    </div>
+                  </div>
+                  <div 
+                    onClick={() => {
+                      const newValue = !commercialEnabled;
+                      setCommercialEnabled(newValue);
+                      if (!newValue) {
+                        setYourBrand(false);
+                        setBrandedContent(false);
+                      }
+                    }}
+                    className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
+                      commercialEnabled 
+                        ? 'bg-gradient-to-r from-cyan-400 to-pink-400' 
+                        : 'bg-gray-700'
+                    }`}
+                  >
+                    <div 
+                      className={`absolute top-0.5 w-6 h-6 bg-white rounded-full transition-all duration-300 shadow-lg ${
+                        commercialEnabled ? 'translate-x-7' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </div>
+                </label>
+
+                {commercialEnabled && (
+                  <div className="space-y-3 ml-2 pl-4 border-l-2 border-cyan-500/30">
+                    {[
+                      { id: 'yourBrand', label: 'Your brand', checked: yourBrand, onChange: setYourBrand, disabled: false },
+                      { id: 'branded', label: 'Branded content', checked: brandedContent, onChange: setBrandedContent, disabled: !isBrandedContentAllowed() },
+                    ].map((item) => (
+                      <label key={item.id} className={`flex items-center gap-3 cursor-pointer group ${item.disabled ? 'opacity-40' : ''}`}>
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={(e) => item.onChange(e.target.checked)}
+                            disabled={item.disabled}
+                            className="sr-only"
+                          />
+                          <div className={`w-6 h-6 rounded-lg border-2 transition-all duration-300 flex items-center justify-center ${
+                            item.checked 
+                              ? 'bg-gradient-to-br from-cyan-400 to-pink-400 border-transparent' 
+                              : 'border-gray-700 group-hover:border-cyan-500'
+                          }`}>
+                            {item.checked && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                                <path d="M5 13l4 4L19 7"/>
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-white font-medium">{item.label}</span>
+                      </label>
+                    ))}
+
+                    {getCommercialLabel() && (
+                      <div className="text-sm bg-gradient-to-r from-cyan-500/10 to-pink-500/10 border border-cyan-500/30 p-3 rounded-xl text-cyan-300">
+                        ℹ️ {getCommercialLabel()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Consent */}
+              <div className="bg-gradient-to-br from-cyan-500/5 to-pink-500/5 border border-cyan-500/20 p-4 rounded-xl">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={hasConsented}
+                      onChange={(e) => setHasConsented(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-6 h-6 rounded-lg border-2 transition-all duration-300 flex items-center justify-center ${
+                      hasConsented 
+                        ? 'bg-gradient-to-br from-cyan-400 to-pink-400 border-transparent' 
+                        : 'border-gray-700 group-hover:border-cyan-500'
+                    }`}>
+                      {hasConsented && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                          <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-300 leading-relaxed">{getConsentText()}</span>
+                </label>
+              </div>
+
+              {/* Processing Notice */}
+              <div className="flex items-start gap-3 text-xs text-gray-500 bg-white/5 p-3 rounded-xl border border-gray-800">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="flex-shrink-0 mt-0.5">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                  <path d="M12 8v4M12 16h.01" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <p>After publishing, it may take a few minutes for your content to process and be visible on your profile.</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="sticky bottom-0 bg-gradient-to-t from-[#050509] via-[#050509] to-transparent pt-6 pb-2 -mx-6 px-6 flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-6 py-4 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition-all duration-300 border border-gray-800 hover:border-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePublish}
+                  disabled={!canPublish() || publishing}
+                  className={`flex-1 px-6 py-4 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                    canPublish() && !publishing
+                      ? 'bg-gradient-to-r from-cyan-400 to-pink-400 hover:shadow-lg hover:shadow-cyan-500/50 hover:scale-[1.02]'
+                      : 'bg-gray-800 opacity-40 cursor-not-allowed'
                   }`}
                 >
-                  <div 
-                    className={`absolute top-0.5 w-6 h-6 bg-white rounded-full transition-transform ${
-                      commercialEnabled ? 'translate-x-7' : 'translate-x-0.5'
-                    }`}
-                  />
-                </div>
-              </label>
-
-              {commercialEnabled && (
-                <div className="space-y-3 ml-4 pb-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={yourBrand}
-                      onChange={(e) => setYourBrand(e.target.checked)}
-                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-[#25F4EE] focus:ring-[#25F4EE]"
-                    />
-                    <span>Your brand</span>
-                  </label>
-                  
-                  <label 
-                    className="flex items-center gap-3 cursor-pointer"
-                    title={!isBrandedContentAllowed() ? "Branded content visibility cannot be set to private" : ""}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={brandedContent}
-                      onChange={(e) => setBrandedContent(e.target.checked)}
-                      disabled={!isBrandedContentAllowed()}
-                      className="w-5 h-5 rounded border-white/20 bg-white/5 text-[#25F4EE] focus:ring-[#25F4EE] disabled:opacity-50"
-                    />
-                    <span className={!isBrandedContentAllowed() ? 'text-white/40' : ''}>
-                      Branded content
-                    </span>
-                  </label>
-
-                  {getCommercialLabel() && (
-                    <div className="text-sm text-[#25F4EE] bg-[#25F4EE]/10 p-3 rounded-lg">
-                      {getCommercialLabel()}
-                    </div>
+                  {publishing && (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                   )}
-                </div>
-              )}
+                  {publishing ? 'Publishing...' : 'Post to TikTok'}
+                </button>
+              </div>
             </div>
-
-            {/* Consent Checkbox */}
-            <div className="bg-white/5 p-4 rounded-lg">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasConsented}
-                  onChange={(e) => setHasConsented(e.target.checked)}
-                  className="w-5 h-5 mt-0.5 rounded border-white/20 bg-white/5 text-[#25F4EE] focus:ring-[#25F4EE]"
-                />
-                <span className="text-sm">{getConsentText()}</span>
-              </label>
-            </div>
-
-            {/* Post Processing Notice */}
-            <div className="text-xs text-white/60 bg-white/5 p-3 rounded-lg">
-              ℹ️ After publishing, it may take a few minutes for your content to process and be visible on your profile.
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={onClose}
-                className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handlePublish}
-                disabled={!canPublish() || publishing}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] hover:opacity-90 rounded-lg font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {publishing && (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                )}
-                {publishing ? 'Publishing...' : 'Post to TikTok'}
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );
