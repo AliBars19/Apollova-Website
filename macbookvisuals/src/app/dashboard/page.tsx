@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import type { Video } from "../types";
 import VideoCard from "../components/VideoCard";
 import LogoutButton from "../components/LogoutButton";
@@ -14,12 +15,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
+  const [mounted, setMounted] = useState(false);
   
   // TikTok publish drawer state
   const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     checkAuth();
   }, []);
 
@@ -160,48 +163,53 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="dashboard">
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '20px'
-      }}>
-        <h1 className="title">Your Video Dashboard</h1>
-        <LogoutButton />
-      </div>
+    <>
+      <main className="dashboard">
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '20px'
+        }}>
+          <h1 className="title">Your Video Dashboard</h1>
+          <LogoutButton />
+        </div>
 
-      <ConnectionStatus/>
+        <ConnectionStatus/>
 
-      {loading && <p>Loading videos...</p>}
-      {error && <p className="error">Error: {error}</p>}
+        {loading && <p>Loading videos...</p>}
+        {error && <p className="error">Error: {error}</p>}
 
-      {!loading && videos.length === 0 && (
-        <p>No videos yet. Upload or send some from your pipeline.</p>
+        {!loading && videos.length === 0 && (
+          <p>No videos yet. Upload or send some from your pipeline.</p>
+        )}
+
+        <div className="grid">
+          {videos.map((video) => (
+            <VideoCard
+              key={video.id}
+              video={video}
+              onSave={handleSave}
+              onPublish={handlePublishClick}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      </main>
+
+      {/* TikTok Publish Drawer - Rendered at document.body level using Portal */}
+      {mounted && createPortal(
+        <TikTokPublishDrawer
+          video={selectedVideo}
+          isOpen={publishDrawerOpen}
+          onClose={() => {
+            setPublishDrawerOpen(false);
+            setSelectedVideo(null);
+          }}
+          onPublish={handleTikTokPublish}
+        />,
+        document.body
       )}
-
-      <div className="grid">
-        {videos.map((video) => (
-          <VideoCard
-            key={video.id}
-            video={video}
-            onSave={handleSave}
-            onPublish={handlePublishClick}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
-
-      {/* TikTok Publish Drawer */}
-      <TikTokPublishDrawer
-        video={selectedVideo}
-        isOpen={publishDrawerOpen}
-        onClose={() => {
-          setPublishDrawerOpen(false);
-          setSelectedVideo(null);
-        }}
-        onPublish={handleTikTokPublish}
-      />
-    </main>
+    </>
   );
 }
