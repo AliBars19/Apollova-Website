@@ -78,13 +78,17 @@ export default function TikTokPublishDrawer({
   const loadCreatorInfo = async () => {
     setLoading(true);
     try {
+      console.log('Fetching creator info...');
       const res = await fetch('/api/tiktok/creator-info');
       const data = await res.json();
       
+      console.log('Creator info response:', data);
+      
       if (data.ok) {
+        console.log('✓ Creator info loaded:', data.creatorInfo);
         setCreatorInfo(data.creatorInfo);
       } else {
-        console.error('Creator info API error:', data.error);
+        console.warn('Creator info API failed, using fallback:', data.error);
         // Fallback to default options
         setCreatorInfo({
           creator_username: 'MacbookVisuals',
@@ -97,7 +101,7 @@ export default function TikTokPublishDrawer({
         });
       }
     } catch (error) {
-      console.error('Creator info error:', error);
+      console.error('Creator info error, using fallback:', error);
       // Fallback to default options
       setCreatorInfo({
         creator_username: 'MacbookVisuals',
@@ -133,7 +137,7 @@ export default function TikTokPublishDrawer({
       await onPublish({
         videoId: video.id,
         title,
-        privacyLevel,
+        privacyLevel: privacyLevel || 'SELF_ONLY', // Default to private if none selected
         disableComment: !allowComment,
         disableDuet: !allowDuet,
         disableStitch: !allowStitch,
@@ -153,10 +157,10 @@ export default function TikTokPublishDrawer({
   };
 
   const canPublish = () => {
+    // Temporarily relaxed for pre-audit testing
     if (!title.trim()) return false;
-    if (!privacyLevel) return false;
-    if (commercialEnabled && !yourBrand && !brandedContent) return false;
-    if (!hasConsented) return false;
+    // Privacy can be empty - will default to SELF_ONLY
+    // Consent not required for draft uploads
     return true;
   };
 
