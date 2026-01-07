@@ -5,11 +5,12 @@ import { join } from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const filename = decodeURIComponent(params.filename);
-    const videoPath = join(process.cwd(), 'public', 'uploads', filename);
+    const { filename } = await params;
+    const decodedFilename = decodeURIComponent(filename);
+    const videoPath = join(process.cwd(), 'public', 'uploads', decodedFilename);
     
     console.log('Streaming video:', videoPath);
     
@@ -20,12 +21,13 @@ export async function GET(
         'Content-Type': 'video/mp4',
         'Content-Length': videoBuffer.length.toString(),
         'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=31536000',
       },
     });
   } catch (error) {
     console.error('Video stream error:', error);
     return NextResponse.json(
-      { error: 'Video not found' },
+      { error: 'Video not found', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 404 }
     );
   }
