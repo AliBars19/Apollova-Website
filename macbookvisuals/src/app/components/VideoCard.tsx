@@ -43,32 +43,14 @@ export default function VideoCard({
       {/* Video Preview */}
       <div className="video-thumb">
         <video 
-          src={encodeURI(video.url)} 
-          controls 
+          src={video.url.replace(/ /g, '%20')} 
+          controls
+          preload="metadata"
           style={{ width: "100%", maxHeight: "300px" }}
           onError={(e) => {
             console.error('Video load error:', video.url);
-            e.currentTarget.style.display = 'none';
-            const fallback = e.currentTarget.parentElement?.querySelector('.video-error');
-            if (fallback) (fallback as HTMLElement).style.display = 'flex';
           }}
         />
-        <div 
-          className="video-error" 
-          style={{ 
-            display: 'none', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            minHeight: '200px',
-            background: '#111',
-            borderRadius: '12px',
-            gap: '12px'
-          }}
-        >
-          <div style={{ fontSize: '48px' }}>🎥</div>
-          <div style={{ fontSize: '14px', color: '#888' }}>Video preview unavailable</div>
-        </div>
       </div>
 
       {/* Filename & Status */}

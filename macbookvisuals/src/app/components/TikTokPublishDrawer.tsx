@@ -426,12 +426,12 @@ export default function TikTokPublishDrawer({
                   background: '#000'
                 }}>
                   <video 
-                    src={`/uploads/${video.filename}`}
+                    src={video.url.replace(/ /g, '%20')}
                     controls
+                    preload="metadata"
                     style={{ width: '100%', display: 'block', aspectRatio: '16/9' }}
                     onError={(e) => {
-                      console.error('Video failed to load:', video.filename);
-                      e.currentTarget.style.display = 'none';
+                      console.error('Video failed to load:', video.url);
                     }}
                   />
                 </div>
