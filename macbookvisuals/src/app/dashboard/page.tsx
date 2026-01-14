@@ -8,6 +8,7 @@ import VideoCard from "../components/VideoCard";
 import LogoutButton from "../components/LogoutButton";
 import ConnectionStatus from "../components/ConnectionStatus";
 import TikTokPublishDrawer, { TikTokPublishData } from "../components/TikTokPublishDrawer";
+import BulkScheduleButton from "../components/BulkScheduleButton";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function Dashboard() {
     setVideos((prev) => prev.filter((v) => v.id !== videoId));
   };
 
-  // TikTok Publish - Direct API call (now opens drawer after audit approval)
+  // TikTok Publish - Opens drawer with compliance form
   const handleTikTokPublishClick = (videoId: string) => {
     const video = videos.find(v => v.id === videoId);
     if (video) {
@@ -180,7 +181,7 @@ export default function Dashboard() {
       if (data.cleaned) {
         // Both succeeded - video deleted
         setVideos((prev) => prev.filter((v) => v.id === videoId));
-        alert('✓ Published to both platforms!\n\n✓ YouTube: Live\n✓ TikTok: Uploaded to drafts\n\nVideo removed from server.');
+        alert('✓ Published to both platforms!\n\n✓ YouTube: Live\n✓ TikTok: Published publicly\n\nVideo removed from server.');
       } else {
         // Update status
         setVideos((prev) =>
@@ -196,7 +197,7 @@ export default function Dashboard() {
           )
         );
 
-        const tiktokStatus = data.results?.tiktok?.success ? '✓ TikTok: Uploaded to drafts' : '✗ TikTok: Failed';
+        const tiktokStatus = data.results?.tiktok?.success ? '✓ TikTok: Published' : '✗ TikTok: Failed';
         const youtubeStatus = data.results?.youtube?.success ? '✓ YouTube: Published' : '✗ YouTube: Failed';
         
         alert(`Publishing complete!\n\n${youtubeStatus}\n${tiktokStatus}`);
@@ -263,14 +264,25 @@ export default function Dashboard() {
   return (
     <>
       <main className="dashboard">
+        {/* Header with Bulk Schedule Button */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center',
-          marginBottom: '20px'
+          marginBottom: '20px',
+          gap: '16px',
+          flexWrap: 'wrap'
         }}>
           <h1 className="title">Your Video Dashboard</h1>
-          <LogoutButton />
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <BulkScheduleButton onScheduleComplete={fetchVideos} />
+            <LogoutButton />
+          </div>
         </div>
 
         <ConnectionStatus/>
