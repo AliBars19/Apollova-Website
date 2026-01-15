@@ -61,7 +61,7 @@ export async function publishToTikTokCompliant(
     }
 
     const initResponse = await fetch(
-      'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/',
+      'https://open.tiktokapis.com/v2/post/publish/video/init/',
       {
         method: 'POST',
         headers: {

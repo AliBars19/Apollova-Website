@@ -113,20 +113,28 @@ export async function POST(
     if (platform === 'youtube' || platform === 'both') {
       try {
         console.log('📺 Publishing to YouTube...');
-        const youtubeResult = await publishToYouTube(videoPath, {
-          title: video.youtube.title,
-          description: video.youtube.description,
-          tags: video.youtube.tags,
-          categoryId: video.youtube.category,
-          privacyStatus: video.youtube.privacy,
-        });
+        const youtubeResult = await publishToYouTube(
+          videoPath,
+          video.youtube.title,
+          video.youtube.description,
+          video.youtube.tags,
+          video.youtube.category,
+          video.youtube.privacy as 'public' | 'private' | 'unlisted'
+        );
 
-        console.log('✓ YouTube publish succeeded');
-        video.youtube.status = 'published';
-        video.youtube.videoId = youtubeResult.videoId;
-        video.youtube.publishedAt = new Date().toISOString();
-        youtubeSuccess = true;
-        results.youtube = { success: true, videoId: youtubeResult.videoId };
+        if (youtubeResult.success) {
+          console.log('✓ YouTube publish succeeded');
+          video.youtube.status = 'published';
+          video.youtube.videoId = youtubeResult.videoId;
+          video.youtube.publishedAt = new Date().toISOString();
+          youtubeSuccess = true;
+          results.youtube = { success: true, videoId: youtubeResult.videoId };
+        } else {
+          console.error('✗ YouTube publish failed:', youtubeResult.error);
+          video.youtube.status = 'failed';
+          video.youtube.error = youtubeResult.error || 'Unknown error';
+          results.youtube = { success: false, error: video.youtube.error };
+        }
       } catch (error) {
         console.error('✗ YouTube publish failed:', error);
         video.youtube.status = 'failed';

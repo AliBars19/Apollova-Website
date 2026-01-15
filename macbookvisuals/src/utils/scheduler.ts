@@ -1,4 +1,4 @@
-// src/lib/scheduler.ts
+// src/utils/scheduler.ts
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
@@ -6,9 +6,9 @@ import type { Video } from '@/app/types';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'videos.json');
 
-
-//Checks for videos that need to be published based on their scheduledAt time
-
+/**
+ * Checks for videos that need to be published based on their scheduledAt time
+ */
 async function checkAndPublishScheduledVideos() {
   const now = new Date();
   const timestamp = now.toISOString();
@@ -49,15 +49,51 @@ async function checkAndPublishScheduledVideos() {
     try {
       console.log(`Publishing: ${video.filename}`);
       
-      // Call the publish API endpoint
+      // Call the publish API endpoint with "both" platform
       const response = await fetch(`http://localhost:3000/api/videos/${video.id}/publish`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform: 'both', // Publish to both TikTok and YouTube
+          publishData: {
+            videoId: video.id,
+            title: video.tiktok.caption,
+            privacyLevel: 'PUBLIC_TO_EVERYONE', // Public on TikTok
+            disableComment: false,
+            disableDuet: false,
+            disableStitch: false,
+            commercialContent: {
+              enabled: false,
+              yourBrand: false,
+              brandedContent: false,
+            },
+          },
+        }),
       });
 
       if (response.ok) {
+        const data = await response.json();
         console.log(`✓ Successfully published: ${video.filename}`);
+        
+        if (data.cleaned) {
+          console.log('✓ Video auto-cleaned (both platforms successful)');
+        }
+        
+        // Log results
+        if (data.results?.tiktok?.success) {
+          console.log(`  ✓ TikTok: ${data.results.tiktok.videoId || 'Published'}`);
+        } else {
+          console.log(`  ✗ TikTok: ${data.results?.tiktok?.error || 'Failed'}`);
+        }
+        
+        if (data.results?.youtube?.success) {
+          console.log(`  ✓ YouTube: ${data.results.youtube.videoId || 'Published'}`);
+        } else {
+          console.log(`  ✗ YouTube: ${data.results?.youtube?.error || 'Failed'}`);
+        }
       } else {
-        console.error(`✗ Failed to publish: ${video.filename}`);
+        const errorText = await response.text();
+        console.error(`✗ Failed to publish: ${video.filename}`, errorText);
       }
     } catch (error) {
       console.error(`Error publishing ${video.filename}:`, error);
@@ -75,9 +111,13 @@ export function startScheduler() {
     await checkAndPublishScheduledVideos();
   });
 
+  console.log('========================================');
   console.log('✓ Scheduler started!');
   console.log('✓ Checking for scheduled videos every 5 minutes');
+  console.log('✓ Will publish to BOTH platforms (YouTube + TikTok)');
+  console.log('✓ TikTok privacy: PUBLIC_TO_EVERYONE');
   console.log('✓ Daily schedule: 12 videos from 11 AM to 11 PM (hourly)');
+  console.log('========================================');
 }
 
 /**
