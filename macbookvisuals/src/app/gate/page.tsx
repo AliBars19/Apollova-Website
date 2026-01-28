@@ -24,7 +24,15 @@ export default function PasswordGate() {
       const data = await res.json();
 
       if (data.success) {
-        router.push("/");
+        // Get redirect destination from cookie or default to dashboard
+        const cookies = document.cookie.split(';');
+        const redirectCookie = cookies.find(c => c.trim().startsWith('redirect_after_gate='));
+        const destination = redirectCookie 
+          ? decodeURIComponent(redirectCookie.split('=')[1]) 
+          : '/dashboard';
+        
+        console.log('Redirecting to:', destination);
+        router.push(destination);
       } else {
         setError("Incorrect password");
       }

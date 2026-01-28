@@ -2,36 +2,44 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const SITE_PASSWORD = process.env.SITE_PASSWORD || '***Besiktas1903***'; // Change this!
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Allow API routes and static files
-  if (
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon')
-  ) {
+  // Only protect /dashboard and /upload pages
+  const protectedPaths = ['/dashboard', '/upload'];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+  
+  // If not a protected path, allow access
+  if (!isProtectedPath) {
     return NextResponse.next();
   }
   
-  // Check if user has entered site password
-  const sitePasswordCookie = request.cookies.get('site_access');
+  // Check if user has site access cookie
+  const siteAccessCookie = request.cookies.get('site_access');
   
-  // If no site password cookie and not on password gate page, redirect to gate
-  if (!sitePasswordCookie && pathname !== '/gate') {
-    return NextResponse.redirect(new URL('/gate', request.url));
+  console.log(`[Middleware] Path: ${pathname}`);
+  console.log(`[Middleware] Cookie present: ${!!siteAccessCookie}`);
+  console.log(`[Middleware] Cookie value: ${siteAccessCookie?.value}`);
+  
+  // If no cookie or cookie value is not 'true', redirect to gate
+  if (!siteAccessCookie || siteAccessCookie.value !== 'true') {
+    console.log(`[Middleware] Redirecting to /gate`);
+    const response = NextResponse.redirect(new URL('/gate', request.url));
+    
+    // Store the intended destination
+    response.cookies.set('redirect_after_gate', pathname, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 5, // 5 minutes
+    });
+    
+    return response;
   }
   
-  // If on gate page but already has access, redirect to home
-  if (pathname === '/gate' && sitePasswordCookie) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-  
+  console.log(`[Middleware] Access granted`);
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/dashboard/:path*', '/upload/:path*'],
 };
