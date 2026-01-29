@@ -1,7 +1,7 @@
 // src/app/api/activate/route.ts
 // This endpoint is called by the After Effects ExtendScript when user enters license key
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getDatabase, saveDatabase } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,20 +16,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const db = getDatabase();
+    const db = await getDatabase();
 
     // Find license by key
-    const license = db.prepare(`
-      SELECT * FROM licenses WHERE license_key = ?
-    `).get(licenseKey) as any;
-
-    // License not found
-    if (!license) {
+    const stmt = db.prepare('SELECT * FROM licenses WHERE license_key = ?');
+    stmt.bind([licenseKey]);
+    
+    if (!stmt.step()) {
+      stmt.free();
       return NextResponse.json({
         success: false,
         error: 'Invalid license key. Please check and try again.'
       }, { status: 404 });
     }
+    
+    const license = stmt.getAsObject() as any;
+    stmt.free();
 
     // License is revoked
     if (license.revoked) {
@@ -50,9 +52,9 @@ export async function POST(request: NextRequest) {
     // License already activated on SAME hardware - just return success
     if (license.activated && license.hw_fingerprint === hwFingerprint) {
       // Update last verified
-      db.prepare(`
-        UPDATE licenses SET last_verified = ? WHERE id = ?
-      `).run(new Date().toISOString(), license.id);
+      db.run('UPDATE licenses SET last_verified = ? WHERE id = ?', 
+        [new Date().toISOString(), license.id]);
+      saveDatabase();
 
       return NextResponse.json({
         success: true,
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // First-time activation - bind to this hardware
     const now = new Date().toISOString();
-    db.prepare(`
+    db.run(`
       UPDATE licenses 
       SET 
         activated = 1,
@@ -70,7 +72,9 @@ export async function POST(request: NextRequest) {
         hw_fingerprint = ?,
         last_verified = ?
       WHERE id = ?
-    `).run(now, hwFingerprint, now, license.id);
+    `, [now, hwFingerprint, now, license.id]);
+    
+    saveDatabase();
 
     return NextResponse.json({
       success: true,

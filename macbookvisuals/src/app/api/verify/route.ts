@@ -1,7 +1,7 @@
 // src/app/api/verify/route.ts
 // This endpoint is called by After Effects to verify license is still valid
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getDatabase, saveDatabase } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,20 +16,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const db = getDatabase();
+    const db = await getDatabase();
 
     // Find license by key
-    const license = db.prepare(`
-      SELECT * FROM licenses WHERE license_key = ?
-    `).get(licenseKey) as any;
-
-    // License not found
-    if (!license) {
+    const stmt = db.prepare('SELECT * FROM licenses WHERE license_key = ?');
+    stmt.bind([licenseKey]);
+    
+    if (!stmt.step()) {
+      stmt.free();
       return NextResponse.json({
         valid: false,
         error: 'License not found.'
       }, { status: 404 });
     }
+    
+    const license = stmt.getAsObject() as any;
+    stmt.free();
 
     // License is revoked
     if (license.revoked) {
@@ -57,9 +59,8 @@ export async function POST(request: NextRequest) {
 
     // All checks passed - update last verified timestamp
     const now = new Date().toISOString();
-    db.prepare(`
-      UPDATE licenses SET last_verified = ? WHERE id = ?
-    `).run(now, license.id);
+    db.run('UPDATE licenses SET last_verified = ? WHERE id = ?', [now, license.id]);
+    saveDatabase();
 
     return NextResponse.json({
       valid: true,

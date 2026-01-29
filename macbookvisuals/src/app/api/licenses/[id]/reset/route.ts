@@ -1,27 +1,30 @@
 // src/app/api/licenses/[id]/reset/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getDatabase, saveDatabase } from '@/lib/database';
 
 // POST /api/licenses/[id]/reset - Reset hardware binding
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDatabase();
-    const { id } = params;
+    const { id } = await params;
+    const db = await getDatabase();
 
     // Check license exists
-    const existing = db.prepare('SELECT * FROM licenses WHERE id = ?').get(id);
-    if (!existing) {
+    const checkStmt = db.prepare('SELECT * FROM licenses WHERE id = ?');
+    checkStmt.bind([id]);
+    if (!checkStmt.step()) {
+      checkStmt.free();
       return NextResponse.json(
         { success: false, error: 'License not found' },
         { status: 404 }
       );
     }
+    checkStmt.free();
 
     // Reset hardware binding - clear fingerprint and activation status
-    db.prepare(`
+    db.run(`
       UPDATE licenses 
       SET 
         activated = 0,
@@ -29,7 +32,9 @@ export async function POST(
         hw_fingerprint = NULL,
         last_verified = NULL
       WHERE id = ?
-    `).run(id);
+    `, [id]);
+    
+    saveDatabase();
 
     return NextResponse.json({ 
       success: true,

@@ -1,13 +1,13 @@
 // src/app/api/licenses/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase, generateLicenseKey, generateId } from '@/lib/database';
+import { getDatabase, generateLicenseKey, generateId, saveDatabase } from '@/lib/database';
 
 // GET /api/licenses - List all licenses
 export async function GET(request: NextRequest) {
   try {
-    const db = getDatabase();
+    const db = await getDatabase();
     
-    const licenses = db.prepare(`
+    const stmt = db.prepare(`
       SELECT 
         id,
         license_key,
@@ -24,18 +24,22 @@ export async function GET(request: NextRequest) {
         created_at
       FROM licenses 
       ORDER BY created_at DESC
-    `).all();
+    `);
 
-    // Convert SQLite integers to booleans
-    const formattedLicenses = licenses.map((license: any) => ({
-      ...license,
-      activated: Boolean(license.activated),
-      revoked: Boolean(license.revoked),
-    }));
+    const licenses: any[] = [];
+    while (stmt.step()) {
+      const row = stmt.getAsObject();
+      licenses.push({
+        ...row,
+        activated: Boolean(row.activated),
+        revoked: Boolean(row.revoked),
+      });
+    }
+    stmt.free();
 
     return NextResponse.json({ 
       success: true, 
-      licenses: formattedLicenses 
+      licenses 
     });
   } catch (error) {
     console.error('Error fetching licenses:', error);
@@ -60,12 +64,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDatabase();
+    const db = await getDatabase();
     const id = generateId();
     const licenseKey = generateLicenseKey();
     const now = new Date().toISOString();
 
-    db.prepare(`
+    db.run(`
       INSERT INTO licenses (
         id,
         license_key,
@@ -78,16 +82,9 @@ export async function POST(request: NextRequest) {
         notes,
         created_at
       ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)
-    `).run(
-      id,
-      licenseKey,
-      customer_email,
-      customer_name,
-      now,
-      price_paid,
-      notes || '',
-      now
-    );
+    `, [id, licenseKey, customer_email, customer_name, now, price_paid, notes || '', now]);
+
+    saveDatabase();
 
     return NextResponse.json({
       success: true,

@@ -1,33 +1,36 @@
 // src/app/api/licenses/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabase } from '@/lib/database';
+import { getDatabase, saveDatabase } from '@/lib/database';
 
 // GET /api/licenses/[id] - Get single license
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDatabase();
-    const { id } = params;
+    const { id } = await params;
+    const db = await getDatabase();
 
-    const license = db.prepare(`
-      SELECT * FROM licenses WHERE id = ?
-    `).get(id);
-
-    if (!license) {
+    const stmt = db.prepare('SELECT * FROM licenses WHERE id = ?');
+    stmt.bind([id]);
+    
+    if (!stmt.step()) {
+      stmt.free();
       return NextResponse.json(
         { success: false, error: 'License not found' },
         { status: 404 }
       );
     }
+    
+    const license = stmt.getAsObject();
+    stmt.free();
 
     return NextResponse.json({
       success: true,
       license: {
         ...license,
-        activated: Boolean((license as any).activated),
-        revoked: Boolean((license as any).revoked),
+        activated: Boolean(license.activated),
+        revoked: Boolean(license.revoked),
       }
     });
   } catch (error) {
@@ -42,21 +45,24 @@ export async function GET(
 // PATCH /api/licenses/[id] - Update license (revoke, edit notes, etc.)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDatabase();
-    const { id } = params;
+    const { id } = await params;
+    const db = await getDatabase();
     const body = await request.json();
 
     // Check license exists
-    const existing = db.prepare('SELECT * FROM licenses WHERE id = ?').get(id);
-    if (!existing) {
+    const checkStmt = db.prepare('SELECT * FROM licenses WHERE id = ?');
+    checkStmt.bind([id]);
+    if (!checkStmt.step()) {
+      checkStmt.free();
       return NextResponse.json(
         { success: false, error: 'License not found' },
         { status: 404 }
       );
     }
+    checkStmt.free();
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -90,11 +96,8 @@ export async function PATCH(
     }
 
     values.push(id);
-    db.prepare(`
-      UPDATE licenses 
-      SET ${updates.join(', ')} 
-      WHERE id = ?
-    `).run(...values);
+    db.run(`UPDATE licenses SET ${updates.join(', ')} WHERE id = ?`, values);
+    saveDatabase();
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -109,20 +112,26 @@ export async function PATCH(
 // DELETE /api/licenses/[id] - Delete license (use with caution)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const db = getDatabase();
-    const { id } = params;
+    const { id } = await params;
+    const db = await getDatabase();
 
-    const result = db.prepare('DELETE FROM licenses WHERE id = ?').run(id);
-
-    if (result.changes === 0) {
+    // Check if exists first
+    const checkStmt = db.prepare('SELECT id FROM licenses WHERE id = ?');
+    checkStmt.bind([id]);
+    if (!checkStmt.step()) {
+      checkStmt.free();
       return NextResponse.json(
         { success: false, error: 'License not found' },
         { status: 404 }
       );
     }
+    checkStmt.free();
+
+    db.run('DELETE FROM licenses WHERE id = ?', [id]);
+    saveDatabase();
 
     return NextResponse.json({ success: true });
   } catch (error) {
