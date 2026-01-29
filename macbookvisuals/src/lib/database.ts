@@ -1,23 +1,45 @@
 // src/lib/database.ts
-import Database from 'better-sqlite3';
+// Using sql.js (pure JavaScript SQLite - no native compilation needed)
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js';
+import fs from 'fs';
 import path from 'path';
 import { randomBytes } from 'crypto';
 
-const DB_PATH = path.join(process.cwd(), 'data', 'licenses.db');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DB_PATH = path.join(DATA_DIR, 'licenses.db');
 
-let db: Database.Database | null = null;
+let db: SqlJsDatabase | null = null;
+let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
 
-export function getDatabase() {
+export async function getDatabase(): Promise<SqlJsDatabase> {
   if (!db) {
-    db = new Database(DB_PATH);
+    // Initialize SQL.js
+    if (!SQL) {
+      SQL = await initSqlJs();
+    }
+    
+    // Ensure data directory exists
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      console.log('✓ Created data directory');
+    }
+    
+    // Load existing database or create new one
+    if (fs.existsSync(DB_PATH)) {
+      const fileBuffer = fs.readFileSync(DB_PATH);
+      db = new SQL.Database(fileBuffer);
+    } else {
+      db = new SQL.Database();
+    }
+    
     initializeDatabase(db);
   }
   return db;
 }
 
-function initializeDatabase(database: Database.Database) {
+function initializeDatabase(database: SqlJsDatabase) {
   // Create licenses table
-  database.exec(`
+  database.run(`
     CREATE TABLE IF NOT EXISTS licenses (
       id TEXT PRIMARY KEY,
       license_key TEXT UNIQUE NOT NULL,
@@ -35,7 +57,23 @@ function initializeDatabase(database: Database.Database) {
     );
   `);
 
+  // Create index for faster lookups
+  database.run(`
+    CREATE INDEX IF NOT EXISTS idx_license_key ON licenses(license_key);
+  `);
+
+  // Save to disk
+  saveDatabase();
+  
   console.log('✓ License database initialized');
+}
+
+export function saveDatabase() {
+  if (db) {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(DB_PATH, buffer);
+  }
 }
 
 export function generateLicenseKey(): string {
@@ -58,10 +96,11 @@ export function generateId(): string {
   return randomBytes(16).toString('hex');
 }
 
-// Close database connection
 export function closeDatabase() {
   if (db) {
+    saveDatabase();
     db.close();
     db = null;
+    console.log('✓ Database connection closed');
   }
 }
