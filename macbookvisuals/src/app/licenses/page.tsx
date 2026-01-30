@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import AdminNavbar from "../components/AdminNavbar";
+import AdminNavbar from "@/app/components/AdminNavbar";
 
 interface License {
   id: string;

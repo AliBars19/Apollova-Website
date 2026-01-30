@@ -1,30 +1,23 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/context/ThemeContext";
 import "./globals.css";
-import Navbar from "./components/Navbar";
-import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "MacbookVisuals Dashboard",
-  description: "Local dashboard for managing TikTok videos and captions",
+  title: "MacBook Visuals - Premium After Effects Templates",
+  description: "Professional After Effects templates for creating viral music visualizations. Trusted by many creators worldwide.",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
       <body>
-        <Navbar />
-
-        <div className="page-container">{children}</div>
-
-        <footer className="legal-footer">
-          <Link href="/privacy-policy">Privacy Policy</Link>
-          <span>•</span>
-          <Link href="/terms-of-service">Terms of Service</Link>
-        </footer>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
