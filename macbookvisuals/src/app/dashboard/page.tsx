@@ -9,6 +9,7 @@ import LogoutButton from "../components/LogoutButton";
 import ConnectionStatus from "../components/ConnectionStatus";
 import TikTokPublishDrawer, { TikTokPublishData } from "../components/TikTokPublishDrawer";
 import BulkScheduleButton from "../components/BulkScheduleButton";
+import AdminNavbar from "../components/AdminNavbar";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -253,17 +254,21 @@ export default function Dashboard() {
 
   if (authChecking) {
     return (
-      <main className="dashboard">
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <p>Checking authentication...</p>
-        </div>
-      </main>
+      <>
+        <AdminNavbar />
+        <main className="dashboard" style={{ paddingTop: '80px' }}>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Checking authentication...</p>
+          </div>
+        </main>
+      </>
     );
   }
 
   return (
     <>
-      <main className="dashboard">
+      <AdminNavbar />
+      <main className="dashboard" style={{ paddingTop: '80px' }}>
         {/* Header with Bulk Schedule Button */}
         <div style={{ 
           display: 'flex', 
@@ -273,7 +278,7 @@ export default function Dashboard() {
           gap: '16px',
           flexWrap: 'wrap'
         }}>
-          <h1 className="title">Your Video Dashboard</h1>
+          <h1 className="title" style={{ margin: 0 }}>Your Video Dashboard</h1>
           <div style={{ 
             display: 'flex', 
             gap: '12px', 
@@ -281,7 +286,6 @@ export default function Dashboard() {
             flexWrap: 'wrap'
           }}>
             <BulkScheduleButton onScheduleComplete={fetchVideos} />
-            <LogoutButton />
           </div>
         </div>
 

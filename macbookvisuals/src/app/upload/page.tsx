@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import AdminNavbar from "../components/AdminNavbar";
 
 interface UploadFile {
   file: File;
@@ -131,196 +132,199 @@ export default function Upload() {
   const errorCount = files.filter(f => f.status === 'error').length;
 
   return (
-    <main className="upload-page">
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h1 className="title">Upload Videos</h1>
+    <>
+      <AdminNavbar />
+      <main className="upload-page" style={{ paddingTop: '80px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <h1 className="title">Upload Videos</h1>
 
-        {/* Drag and Drop Area */}
-        <div
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            border: `3px dashed ${dragActive ? '#00f5ff' : '#333'}`,
-            borderRadius: '16px',
-            padding: '60px 40px',
-            textAlign: 'center',
-            background: dragActive ? 'rgba(0, 245, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-            cursor: 'pointer',
-            transition: 'all 0.3s',
-            marginBottom: '32px'
-          }}
-        >
-          <div style={{ fontSize: '64px', marginBottom: '16px' }}>
-            {dragActive ? '📂' : '🎥'}
-          </div>
-          <h2 style={{ margin: '0 0 8px', fontSize: '20px', color: '#fff' }}>
-            {dragActive ? 'Drop videos here' : 'Click or drag videos to upload'}
-          </h2>
-          <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>
-            Upload multiple MP4 files at once
-          </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/mp4"
-            multiple
-            onChange={(e) => handleFileSelect(e.target.files)}
-            style={{ display: 'none' }}
-          />
-        </div>
-
-        {/* Stats */}
-        {files.length > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            gap: '16px', 
-            marginBottom: '24px',
-            padding: '16px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '12px'
-          }}>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#888' }}>{files.length}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>Total</div>
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffcf66' }}>{pendingCount}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>Pending</div>
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8bff9c' }}>{successCount}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>Success</div>
-            </div>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff6b81' }}>{errorCount}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>Failed</div>
-            </div>
-          </div>
-        )}
-
-        {/* File List */}
-        {files.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '16px', marginBottom: '16px', color: '#ccc' }}>
-              Files ({files.length})
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {files.map((uploadFile) => (
-                <div
-                  key={uploadFile.id}
-                  style={{
-                    padding: '16px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '12px',
-                    border: `1px solid ${
-                      uploadFile.status === 'success' ? '#8bff9c' :
-                      uploadFile.status === 'error' ? '#ff6b81' :
-                      uploadFile.status === 'uploading' ? '#00f5ff' :
-                      '#333'
-                    }`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px'
-                  }}
-                >
-                  {/* Icon */}
-                  <div style={{ fontSize: '32px' }}>
-                    {uploadFile.status === 'success' ? '✅' :
-                     uploadFile.status === 'error' ? '❌' :
-                     uploadFile.status === 'uploading' ? '⏳' :
-                     '🎬'}
-                  </div>
-
-                  {/* File Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ 
-                      fontSize: '14px', 
-                      fontWeight: 'bold', 
-                      color: '#fff',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {uploadFile.file.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                      {formatFileSize(uploadFile.file.size)} • {uploadFile.status}
-                    </div>
-                    {uploadFile.error && (
-                      <div style={{ fontSize: '11px', color: '#ff6b81', marginTop: '4px' }}>
-                        {uploadFile.error}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Remove Button */}
-                  {uploadFile.status === 'pending' && (
-                    <button
-                      onClick={() => removeFile(uploadFile.id)}
-                      style={{
-                        padding: '8px 16px',
-                        background: 'rgba(255, 107, 129, 0.1)',
-                        border: '1px solid #ff6b81',
-                        borderRadius: '8px',
-                        color: '#ff6b81',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 107, 129, 0.2)'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 107, 129, 0.1)'}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="btn outline"
-            style={{ flex: 1, padding: '16px' }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={uploadAll}
-            disabled={pendingCount === 0 || uploading}
-            className="btn primary"
-            style={{ 
-              flex: 2, 
-              padding: '16px',
-              opacity: pendingCount === 0 || uploading ? 0.5 : 1,
-              cursor: pendingCount === 0 || uploading ? 'not-allowed' : 'pointer'
+          {/* Drag and Drop Area */}
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              border: `3px dashed ${dragActive ? '#00f5ff' : '#333'}`,
+              borderRadius: '16px',
+              padding: '60px 40px',
+              textAlign: 'center',
+              background: dragActive ? 'rgba(0, 245, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              marginBottom: '32px'
             }}
           >
-            {uploading ? `Uploading ${files.filter(f => f.status === 'uploading').length}...` : `Upload ${pendingCount} ${pendingCount === 1 ? 'Video' : 'Videos'}`}
-          </button>
-        </div>
-
-        {successCount > 0 && !uploading && (
-          <div style={{
-            marginTop: '24px',
-            padding: '16px',
-            background: 'rgba(139, 255, 156, 0.1)',
-            border: '1px solid #8bff9c',
-            borderRadius: '12px',
-            color: '#8bff9c',
-            textAlign: 'center'
-          }}>
-            ✓ {successCount} {successCount === 1 ? 'video' : 'videos'} uploaded successfully! Redirecting to dashboard...
+            <div style={{ fontSize: '64px', marginBottom: '16px' }}>
+              {dragActive ? '📂' : '🎥'}
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: '20px', color: '#fff' }}>
+              {dragActive ? 'Drop videos here' : 'Click or drag videos to upload'}
+            </h2>
+            <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>
+              Upload multiple MP4 files at once
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/mp4"
+              multiple
+              onChange={(e) => handleFileSelect(e.target.files)}
+              style={{ display: 'none' }}
+            />
           </div>
-        )}
-      </div>
-    </main>
+
+          {/* Stats */}
+          {files.length > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '16px', 
+              marginBottom: '24px',
+              padding: '16px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px'
+            }}>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#888' }}>{files.length}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Total</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffcf66' }}>{pendingCount}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Pending</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8bff9c' }}>{successCount}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Success</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff6b81' }}>{errorCount}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Failed</div>
+              </div>
+            </div>
+          )}
+
+          {/* File List */}
+          {files.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '16px', marginBottom: '16px', color: '#ccc' }}>
+                Files ({files.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {files.map((uploadFile) => (
+                  <div
+                    key={uploadFile.id}
+                    style={{
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '12px',
+                      border: `1px solid ${
+                        uploadFile.status === 'success' ? '#8bff9c' :
+                        uploadFile.status === 'error' ? '#ff6b81' :
+                        uploadFile.status === 'uploading' ? '#00f5ff' :
+                        '#333'
+                      }`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px'
+                    }}
+                  >
+                    {/* Icon */}
+                    <div style={{ fontSize: '32px' }}>
+                      {uploadFile.status === 'success' ? '✅' :
+                       uploadFile.status === 'error' ? '❌' :
+                       uploadFile.status === 'uploading' ? '⏳' :
+                       '🎬'}
+                    </div>
+
+                    {/* File Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: 'bold', 
+                        color: '#fff',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {uploadFile.file.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                        {formatFileSize(uploadFile.file.size)} • {uploadFile.status}
+                      </div>
+                      {uploadFile.error && (
+                        <div style={{ fontSize: '11px', color: '#ff6b81', marginTop: '4px' }}>
+                          {uploadFile.error}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Remove Button */}
+                    {uploadFile.status === 'pending' && (
+                      <button
+                        onClick={() => removeFile(uploadFile.id)}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(255, 107, 129, 0.1)',
+                          border: '1px solid #ff6b81',
+                          borderRadius: '8px',
+                          color: '#ff6b81',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 107, 129, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 107, 129, 0.1)'}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="btn outline"
+              style={{ flex: 1, padding: '16px' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={uploadAll}
+              disabled={pendingCount === 0 || uploading}
+              className="btn primary"
+              style={{ 
+                flex: 2, 
+                padding: '16px',
+                opacity: pendingCount === 0 || uploading ? 0.5 : 1,
+                cursor: pendingCount === 0 || uploading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {uploading ? `Uploading ${files.filter(f => f.status === 'uploading').length}...` : `Upload ${pendingCount} ${pendingCount === 1 ? 'Video' : 'Videos'}`}
+            </button>
+          </div>
+
+          {successCount > 0 && !uploading && (
+            <div style={{
+              marginTop: '24px',
+              padding: '16px',
+              background: 'rgba(139, 255, 156, 0.1)',
+              border: '1px solid #8bff9c',
+              borderRadius: '12px',
+              color: '#8bff9c',
+              textAlign: 'center'
+            }}>
+              ✓ {successCount} {successCount === 1 ? 'video' : 'videos'} uploaded successfully! Redirecting to dashboard...
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   );
 }
