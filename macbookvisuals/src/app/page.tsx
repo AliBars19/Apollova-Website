@@ -12,22 +12,21 @@ export default function HomePage() {
   const templates = [
     {
       href: '/templates/template-1',
-      // Replace with your actual image path in /public folder
       image: '/images/template-1-preview.jpg',
       title: 'Template One',
-      description: 'A stunning visual experience that transforms your music into captivating animations, designed for maximum engagement.',
+      description: 'A stunning visual experience that transforms your music into captivating animations.',
     },
     {
       href: '/templates/template-2',
       image: '/images/template-2-preview.jpg',
       title: 'Template Two',
-      description: 'Dynamic lyric visualizations with fluid motion and modern aesthetics, perfect for social media platforms.',
+      description: 'Dynamic lyric visualizations with fluid motion and modern aesthetics.',
     },
     {
       href: '/templates/template-3',
       image: '/images/template-3-preview.jpg',
       title: 'Template Three',
-      description: 'Minimalist elegance meets powerful impact, creating content that resonates with audiences worldwide.',
+      description: 'Minimalist elegance meets powerful impact for worldwide audiences.',
     },
   ];
 
@@ -42,6 +41,7 @@ export default function HomePage() {
         {/* Hero Section - Full Screen Video */}
         <section style={{
           height: '100vh',
+          minHeight: '500px',
           position: 'relative',
           overflow: 'hidden',
         }}>
@@ -63,11 +63,10 @@ export default function HomePage() {
               objectFit: 'cover',
             }}
           >
-            {/* Replace with your promo video in /public folder */}
             <source src="/videos/hero-promo.mp4" type="video/mp4" />
           </video>
 
-          {/* Optional overlay for text readability */}
+          {/* Overlay */}
           <div style={{
             position: 'absolute',
             inset: 0,
@@ -77,7 +76,7 @@ export default function HomePage() {
           {/* Scroll indicator */}
           <div style={{
             position: 'absolute',
-            bottom: '40px',
+            bottom: '30px',
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
@@ -87,10 +86,10 @@ export default function HomePage() {
             color: '#fff',
             animation: 'bounce 2s infinite',
           }}>
-            <span style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase' }}>
               Scroll
             </span>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12l7 7 7-7" />
             </svg>
           </div>
@@ -98,17 +97,17 @@ export default function HomePage() {
 
         {/* Templates Section */}
         <section style={{
-          padding: '120px 40px',
+          padding: 'clamp(60px, 10vw, 120px) 20px',
           maxWidth: '1400px',
           margin: '0 auto',
         }}>
           {/* Section Title */}
           <div style={{
             textAlign: 'center',
-            marginBottom: '80px',
+            marginBottom: 'clamp(40px, 8vw, 80px)',
           }}>
             <h2 style={{
-              fontSize: 'clamp(32px, 5vw, 48px)',
+              fontSize: 'clamp(28px, 5vw, 48px)',
               fontWeight: '300',
               color: colors.text,
               marginBottom: '16px',
@@ -118,21 +117,21 @@ export default function HomePage() {
             </h2>
             <p style={{
               color: colors.textSecondary,
-              fontSize: '16px',
+              fontSize: 'clamp(14px, 2vw, 16px)',
               maxWidth: '600px',
               margin: '0 auto',
               lineHeight: '1.8',
+              padding: '0 20px',
             }}>
               Professional templates designed to transform your music into viral visual content.
             </p>
           </div>
 
-          {/* Template Cards - Soneva Style (no borders, clean) */}
-          {/* LOCATION: Edit the 'templates' array at the top of this file */}
+          {/* Template Cards */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '40px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 'clamp(24px, 4vw, 40px)',
           }}>
             {templates.map((template, index) => (
               <Link 
@@ -143,18 +142,14 @@ export default function HomePage() {
                 <article style={{
                   cursor: 'pointer',
                   transition: 'transform 0.3s ease',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
-                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                >
+                }}>
                   {/* Image Container */}
                   <div style={{
                     aspectRatio: '4/5',
                     overflow: 'hidden',
-                    marginBottom: '24px',
+                    marginBottom: '20px',
                     background: colors.backgroundSecondary,
                   }}>
-                    {/* Replace src with actual images */}
                     <img
                       src={template.image}
                       alt={template.title}
@@ -164,10 +159,7 @@ export default function HomePage() {
                         objectFit: 'cover',
                         transition: 'transform 0.5s ease',
                       }}
-                      onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                      onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                       onError={(e) => {
-                        // Placeholder if image not found
                         e.currentTarget.style.display = 'none';
                       }}
                     />
@@ -175,10 +167,10 @@ export default function HomePage() {
 
                   {/* Title */}
                   <h3 style={{
-                    fontSize: '24px',
+                    fontSize: 'clamp(18px, 3vw, 24px)',
                     fontWeight: '400',
                     color: colors.text,
-                    marginBottom: '12px',
+                    marginBottom: '10px',
                     letterSpacing: '-0.5px',
                   }}>
                     {template.title}
@@ -187,9 +179,9 @@ export default function HomePage() {
                   {/* Description */}
                   <p style={{
                     color: colors.textSecondary,
-                    fontSize: '14px',
+                    fontSize: 'clamp(13px, 2vw, 14px)',
                     lineHeight: '1.7',
-                    marginBottom: '16px',
+                    marginBottom: '12px',
                   }}>
                     {template.description}
                   </p>
@@ -211,7 +203,7 @@ export default function HomePage() {
 
         {/* Enquiries Section */}
         <section style={{
-          padding: '100px 40px',
+          padding: 'clamp(60px, 10vw, 100px) 20px',
           background: colors.backgroundSecondary,
           transition: 'all 0.3s ease',
         }}>
@@ -219,34 +211,32 @@ export default function HomePage() {
             maxWidth: '1200px',
             margin: '0 auto',
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '80px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 'clamp(32px, 6vw, 80px)',
             alignItems: 'center',
           }}>
             {/* Left: Description */}
             <div>
               <h2 style={{
-                fontSize: 'clamp(28px, 4vw, 40px)',
+                fontSize: 'clamp(24px, 4vw, 40px)',
                 fontWeight: '300',
                 color: colors.text,
-                marginBottom: '24px',
+                marginBottom: '20px',
                 letterSpacing: '-1px',
               }}>
                 Enquiries
               </h2>
               <p style={{
                 color: colors.textSecondary,
-                fontSize: '16px',
+                fontSize: 'clamp(14px, 2vw, 16px)',
                 lineHeight: '1.8',
-                marginBottom: '16px',
+                marginBottom: '12px',
               }}>
-                Have questions about our templates or need custom solutions? We'd love to hear from you. 
-                Whether you're looking for licensing information, technical support, or partnership opportunities, 
-                our team is here to help.
+                Have questions about our templates or need custom solutions? We'd love to hear from you.
               </p>
               <p style={{
                 color: colors.textSecondary,
-                fontSize: '16px',
+                fontSize: 'clamp(14px, 2vw, 16px)',
                 lineHeight: '1.8',
               }}>
                 Response time: Within 24 hours.
@@ -258,11 +248,11 @@ export default function HomePage() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
-              gap: '24px',
+              gap: '16px',
             }}>
               <p style={{
                 color: colors.textSecondary,
-                fontSize: '14px',
+                fontSize: '12px',
                 textTransform: 'uppercase',
                 letterSpacing: '2px',
               }}>
@@ -271,12 +261,13 @@ export default function HomePage() {
               <a
                 href="mailto:contact@macbookvisuals.com?subject=Inquiry about MacBook Visuals"
                 style={{
-                  fontSize: 'clamp(24px, 3vw, 36px)',
+                  fontSize: 'clamp(18px, 3vw, 32px)',
                   color: colors.text,
                   textDecoration: 'none',
                   borderBottom: `1px solid ${colors.text}`,
-                  paddingBottom: '8px',
+                  paddingBottom: '6px',
                   transition: 'all 0.3s ease',
+                  wordBreak: 'break-all',
                 }}
               >
                 contact@macbookvisuals.com
@@ -287,7 +278,6 @@ export default function HomePage() {
       </main>
       <PublicFooter />
 
-      {/* CSS Animation for scroll indicator */}
       <style jsx global>{`
         @keyframes bounce {
           0%, 20%, 50%, 80%, 100% {

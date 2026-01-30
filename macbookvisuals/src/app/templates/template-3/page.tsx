@@ -3,9 +3,18 @@
 import { useTheme } from '@/context/ThemeContext';
 import PublicNavbar from '../../components/PublicNavbar';
 import PublicFooter from '../../components/PublicFooter';
+import { useState, useEffect } from 'react';
 
 export default function Template3Page() {
   const { theme, colors } = useTheme();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const features = [
     {
@@ -35,20 +44,21 @@ export default function Template3Page() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '120px 40px 80px',
-          gap: '48px',
+          padding: '100px 20px 60px',
+          gap: '36px',
         }}>
           {/* Phone Frame with Video */}
           <div style={{
-            width: '320px',
-            height: '640px',
-            borderRadius: '40px',
+            width: isMobile ? '240px' : '300px',
+            height: isMobile ? '480px' : '600px',
+            borderRadius: '32px',
             overflow: 'hidden',
             boxShadow: theme === 'light' 
-              ? '0 40px 80px rgba(0,0,0,0.15)' 
-              : '0 40px 80px rgba(0,0,0,0.5)',
-            border: `8px solid ${theme === 'light' ? '#1a1a1a' : '#333'}`,
+              ? '0 30px 60px rgba(0,0,0,0.15)' 
+              : '0 30px 60px rgba(0,0,0,0.5)',
+            border: `6px solid ${theme === 'light' ? '#1a1a1a' : '#333'}`,
             background: '#000',
+            flexShrink: 0,
           }}>
             <video
               autoPlay
@@ -65,36 +75,35 @@ export default function Template3Page() {
             </video>
           </div>
 
-          {/* Title & Description below phone */}
+          {/* Title & Description */}
           <div style={{
             textAlign: 'center',
             maxWidth: '600px',
+            padding: '0 20px',
           }}>
             <h1 style={{
-              fontSize: 'clamp(36px, 5vw, 52px)',
+              fontSize: 'clamp(32px, 6vw, 52px)',
               fontWeight: '300',
               color: colors.text,
-              marginBottom: '24px',
+              marginBottom: '20px',
               letterSpacing: '-1px',
             }}>
               Template Three
             </h1>
             <p style={{
               color: colors.textSecondary,
-              fontSize: '17px',
+              fontSize: 'clamp(15px, 2.5vw, 17px)',
               lineHeight: '1.9',
             }}>
-              {/* EDIT: Your template 3 description */}
-              Minimalist elegance meets powerful impact. This template strips away the 
-              unnecessary to focus on what matters most: your music and message. 
-              Creating content that resonates deeply with audiences worldwide.
+              Minimalist elegance meets powerful impact. Creating content 
+              that resonates deeply with audiences worldwide.
             </p>
           </div>
         </section>
 
-        {/* Stats/Social Proof Bar */}
+        {/* Stats Bar */}
         <section style={{
-          padding: '60px 40px',
+          padding: 'clamp(40px, 6vw, 60px) 20px',
           background: colors.backgroundSecondary,
         }}>
           <div style={{
@@ -102,7 +111,7 @@ export default function Template3Page() {
             margin: '0 auto',
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '40px',
+            gap: isMobile ? '16px' : '40px',
             textAlign: 'center',
           }}>
             {[
@@ -112,15 +121,15 @@ export default function Template3Page() {
             ].map((stat, index) => (
               <div key={index}>
                 <div style={{
-                  fontSize: '36px',
+                  fontSize: isMobile ? '24px' : '36px',
                   fontWeight: '300',
                   color: colors.text,
-                  marginBottom: '8px',
+                  marginBottom: '4px',
                 }}>
                   {stat.number}
                 </div>
                 <div style={{
-                  fontSize: '14px',
+                  fontSize: isMobile ? '10px' : '13px',
                   color: colors.textSecondary,
                   textTransform: 'uppercase',
                   letterSpacing: '1px',
@@ -132,23 +141,23 @@ export default function Template3Page() {
           </div>
         </section>
 
-        {/* Feature Cards - Grid */}
+        {/* Feature Cards */}
         <section style={{
-          padding: '100px 40px',
+          padding: 'clamp(60px, 10vw, 100px) 20px',
           maxWidth: '1000px',
           margin: '0 auto',
         }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '48px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 'clamp(24px, 4vw, 48px)',
           }}>
             {features.map((feature, index) => (
               <div key={index}>
                 <div style={{
                   aspectRatio: '1/1',
                   overflow: 'hidden',
-                  marginBottom: '24px',
+                  marginBottom: '20px',
                   background: colors.backgroundSecondary,
                 }}>
                   <img
@@ -163,16 +172,16 @@ export default function Template3Page() {
                   />
                 </div>
                 <h3 style={{
-                  fontSize: '20px',
+                  fontSize: 'clamp(16px, 2.5vw, 20px)',
                   fontWeight: '500',
                   color: colors.text,
-                  marginBottom: '12px',
+                  marginBottom: '10px',
                 }}>
                   {feature.title}
                 </h3>
                 <p style={{
                   color: colors.textSecondary,
-                  fontSize: '14px',
+                  fontSize: 'clamp(13px, 2vw, 14px)',
                   lineHeight: '1.7',
                 }}>
                   {feature.description}
@@ -182,31 +191,31 @@ export default function Template3Page() {
           </div>
         </section>
 
-        {/* Enquiries Section - Full Width */}
+        {/* CTA Section */}
         <section style={{
-          padding: '120px 40px',
+          padding: 'clamp(80px, 12vw, 120px) 20px',
           background: theme === 'light' 
             ? colors.text 
             : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+          textAlign: 'center',
         }}>
           <div style={{
-            maxWidth: '800px',
+            maxWidth: '600px',
             margin: '0 auto',
-            textAlign: 'center',
           }}>
             <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 44px)',
+              fontSize: 'clamp(24px, 5vw, 44px)',
               fontWeight: '300',
               color: '#fff',
-              marginBottom: '24px',
+              marginBottom: '20px',
             }}>
               Let's create something beautiful
             </h2>
             <p style={{
               color: 'rgba(255,255,255,0.8)',
-              fontSize: '16px',
+              fontSize: 'clamp(14px, 2vw, 16px)',
               lineHeight: '1.8',
-              marginBottom: '40px',
+              marginBottom: '32px',
             }}>
               Ready to elevate your content? Get in touch to discuss licensing options.
             </p>
@@ -214,11 +223,11 @@ export default function Template3Page() {
               href="mailto:contact@macbookvisuals.com?subject=Inquiry about Template Three"
               style={{
                 display: 'inline-block',
-                padding: '18px 48px',
+                padding: '16px 40px',
                 background: '#fff',
-                color: colors.text,
+                color: '#1a1a1a',
                 textDecoration: 'none',
-                fontSize: '15px',
+                fontSize: '14px',
                 fontWeight: '500',
               }}
             >

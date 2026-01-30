@@ -8,8 +8,15 @@ import { useState, useEffect } from 'react';
 export default function ResultsPage() {
   const { theme, colors } = useTheme();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Stats ticker data
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const stats = [
     { value: '127M+', label: 'Total Views' },
     { value: '2,400+', label: 'Creators' },
@@ -17,57 +24,33 @@ export default function ResultsPage() {
     { value: '45', label: 'Countries' },
   ];
 
-  // Testimonials - EDIT THESE
   const testimonials = [
     {
       quote: "MacBook Visuals completely transformed my content. I went from 1K to 100K followers in 3 months.",
       author: "Creator Name",
       role: "TikTok Creator",
-      image: "/images/testimonial-1.jpg",
       stats: "1.2M views on first video",
     },
     {
       quote: "The quality is unmatched. My engagement rate tripled after switching to these templates.",
       author: "Creator Name",
       role: "Music Producer",
-      image: "/images/testimonial-2.jpg",
       stats: "500K+ total views",
     },
     {
       quote: "Professional results without the learning curve. Worth every penny.",
       author: "Creator Name",
       role: "Content Creator",
-      image: "/images/testimonial-3.jpg",
       stats: "50+ videos created",
     },
   ];
 
-  // Example results/case studies - EDIT THESE
   const caseStudies = [
-    {
-      before: "2K followers",
-      after: "150K followers",
-      timeframe: "4 months",
-      platform: "TikTok",
-      image: "/images/case-study-1.jpg",
-    },
-    {
-      before: "500 avg views",
-      after: "50K avg views",
-      timeframe: "2 months",
-      platform: "Instagram",
-      image: "/images/case-study-2.jpg",
-    },
-    {
-      before: "0 viral videos",
-      after: "12 viral videos",
-      timeframe: "6 months",
-      platform: "YouTube Shorts",
-      image: "/images/case-study-3.jpg",
-    },
+    { before: "2K followers", after: "150K followers", timeframe: "4 months", platform: "TikTok" },
+    { before: "500 avg views", after: "50K avg views", timeframe: "2 months", platform: "Instagram" },
+    { before: "0 viral videos", after: "12 viral videos", timeframe: "6 months", platform: "YouTube" },
   ];
 
-  // Auto-rotate testimonials
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
@@ -85,60 +68,60 @@ export default function ResultsPage() {
       }}>
         {/* Hero */}
         <section style={{
-          padding: '160px 40px 100px',
+          padding: 'clamp(120px, 15vw, 160px) 20px clamp(60px, 10vw, 100px)',
           textAlign: 'center',
         }}>
           <h1 style={{
-            fontSize: 'clamp(40px, 6vw, 64px)',
+            fontSize: 'clamp(36px, 8vw, 64px)',
             fontWeight: '300',
             color: colors.text,
-            marginBottom: '24px',
+            marginBottom: '20px',
             letterSpacing: '-2px',
           }}>
             Real Results
           </h1>
           <p style={{
             color: colors.textSecondary,
-            fontSize: '18px',
+            fontSize: 'clamp(15px, 2.5vw, 18px)',
             maxWidth: '600px',
             margin: '0 auto',
             lineHeight: '1.8',
+            padding: '0 20px',
           }}>
-            See how creators around the world are using MacBook Visuals to build audiences 
-            and create viral content.
+            See how creators around the world are building audiences and creating viral content.
           </p>
         </section>
 
-        {/* Stats Ticker */}
+        {/* Stats */}
         <section style={{
-          padding: '60px 0',
+          padding: 'clamp(40px, 6vw, 60px) 20px',
           background: colors.backgroundSecondary,
-          overflow: 'hidden',
         }}>
           <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '80px',
-            flexWrap: 'wrap',
-            padding: '0 40px',
+            display: 'grid',
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            gap: isMobile ? '24px' : '40px',
+            maxWidth: '1000px',
+            margin: '0 auto',
+            textAlign: 'center',
           }}>
             {stats.map((stat, index) => (
-              <div key={index} style={{ textAlign: 'center' }}>
+              <div key={index}>
                 <div style={{
-                  fontSize: 'clamp(36px, 5vw, 56px)',
+                  fontSize: isMobile ? '28px' : 'clamp(32px, 5vw, 48px)',
                   fontWeight: '300',
                   background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: '8px',
+                  marginBottom: '6px',
                 }}>
                   {stat.value}
                 </div>
                 <div style={{
-                  fontSize: '14px',
+                  fontSize: isMobile ? '11px' : '13px',
                   color: colors.textSecondary,
                   textTransform: 'uppercase',
-                  letterSpacing: '2px',
+                  letterSpacing: '1px',
                 }}>
                   {stat.label}
                 </div>
@@ -147,99 +130,92 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* Before/After Case Studies */}
+        {/* Before/After */}
         <section style={{
-          padding: '120px 40px',
+          padding: 'clamp(60px, 10vw, 120px) 20px',
           maxWidth: '1200px',
           margin: '0 auto',
         }}>
           <h2 style={{
-            fontSize: 'clamp(28px, 4vw, 40px)',
+            fontSize: 'clamp(24px, 4vw, 40px)',
             fontWeight: '300',
             color: colors.text,
-            marginBottom: '16px',
+            marginBottom: '12px',
             textAlign: 'center',
           }}>
             Transformations
           </h2>
           <p style={{
             color: colors.textSecondary,
-            fontSize: '16px',
+            fontSize: 'clamp(13px, 2vw, 16px)',
             textAlign: 'center',
-            marginBottom: '60px',
+            marginBottom: 'clamp(32px, 6vw, 60px)',
           }}>
-            Before and after using MacBook Visuals templates
+            Before and after using MacBook Visuals
           </p>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '32px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 'clamp(16px, 3vw, 32px)',
           }}>
             {caseStudies.map((study, index) => (
               <div 
                 key={index}
                 style={{
                   background: colors.backgroundSecondary,
-                  padding: '32px',
+                  padding: 'clamp(20px, 4vw, 32px)',
                   textAlign: 'center',
-                  transition: 'transform 0.3s ease',
                 }}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                {/* Before */}
                 <div style={{
                   color: colors.textSecondary,
-                  fontSize: '14px',
-                  marginBottom: '8px',
+                  fontSize: '12px',
+                  marginBottom: '6px',
                   textTransform: 'uppercase',
                   letterSpacing: '1px',
                 }}>
                   Before
                 </div>
                 <div style={{
-                  fontSize: '24px',
+                  fontSize: 'clamp(18px, 3vw, 24px)',
                   color: colors.text,
-                  marginBottom: '24px',
+                  marginBottom: '20px',
                   fontWeight: '300',
                 }}>
                   {study.before}
                 </div>
 
-                {/* Arrow */}
                 <div style={{
-                  fontSize: '24px',
+                  fontSize: '20px',
                   color: colors.accent,
-                  marginBottom: '24px',
+                  marginBottom: '20px',
                 }}>
                   ↓
                 </div>
 
-                {/* After */}
                 <div style={{
                   color: colors.textSecondary,
-                  fontSize: '14px',
-                  marginBottom: '8px',
+                  fontSize: '12px',
+                  marginBottom: '6px',
                   textTransform: 'uppercase',
                   letterSpacing: '1px',
                 }}>
                   After
                 </div>
                 <div style={{
-                  fontSize: '32px',
+                  fontSize: 'clamp(24px, 4vw, 32px)',
                   fontWeight: '400',
                   background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: '24px',
+                  marginBottom: '20px',
                 }}>
                   {study.after}
                 </div>
 
-                {/* Meta */}
                 <div style={{
-                  fontSize: '13px',
+                  fontSize: '12px',
                   color: colors.textSecondary,
                 }}>
                   {study.timeframe} • {study.platform}
@@ -249,47 +225,39 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* Testimonials Carousel */}
+        {/* Testimonials */}
         <section style={{
-          padding: '100px 40px',
+          padding: 'clamp(60px, 10vw, 100px) 20px',
           background: colors.backgroundSecondary,
         }}>
           <div style={{
-            maxWidth: '900px',
+            maxWidth: '800px',
             margin: '0 auto',
             textAlign: 'center',
           }}>
             <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 40px)',
+              fontSize: 'clamp(24px, 4vw, 40px)',
               fontWeight: '300',
               color: colors.text,
-              marginBottom: '60px',
+              marginBottom: 'clamp(32px, 6vw, 60px)',
             }}>
               What Creators Say
             </h2>
 
-            {/* Active Testimonial */}
-            <div style={{
-              minHeight: '200px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
+            <div style={{ minHeight: isMobile ? '200px' : '180px' }}>
               <blockquote style={{
-                fontSize: 'clamp(20px, 3vw, 28px)',
+                fontSize: 'clamp(18px, 3.5vw, 28px)',
                 fontWeight: '300',
                 color: colors.text,
                 lineHeight: '1.6',
-                marginBottom: '32px',
+                marginBottom: '24px',
                 fontStyle: 'italic',
+                padding: '0 10px',
               }}>
                 "{testimonials[activeTestimonial].quote}"
               </blockquote>
 
-              <div style={{
-                marginBottom: '8px',
-              }}>
+              <div style={{ marginBottom: '6px' }}>
                 <span style={{ color: colors.text, fontWeight: '500' }}>
                   {testimonials[activeTestimonial].author}
                 </span>
@@ -299,10 +267,7 @@ export default function ResultsPage() {
                 </span>
               </div>
 
-              <div style={{
-                fontSize: '14px',
-                color: colors.accent,
-              }}>
+              <div style={{ fontSize: '13px', color: colors.accent }}>
                 {testimonials[activeTestimonial].stats}
               </div>
             </div>
@@ -311,8 +276,8 @@ export default function ResultsPage() {
             <div style={{
               display: 'flex',
               justifyContent: 'center',
-              gap: '12px',
-              marginTop: '40px',
+              gap: '10px',
+              marginTop: '32px',
             }}>
               {testimonials.map((_, index) => (
                 <button
@@ -322,9 +287,7 @@ export default function ResultsPage() {
                     width: index === activeTestimonial ? '24px' : '8px',
                     height: '8px',
                     borderRadius: '4px',
-                    background: index === activeTestimonial 
-                      ? colors.accent 
-                      : colors.border,
+                    background: index === activeTestimonial ? colors.accent : colors.border,
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
@@ -335,35 +298,34 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* Video Showcase Grid */}
+        {/* Showcase Grid */}
         <section style={{
-          padding: '120px 40px',
+          padding: 'clamp(60px, 10vw, 120px) 20px',
           maxWidth: '1400px',
           margin: '0 auto',
         }}>
           <h2 style={{
-            fontSize: 'clamp(28px, 4vw, 40px)',
+            fontSize: 'clamp(24px, 4vw, 40px)',
             fontWeight: '300',
             color: colors.text,
-            marginBottom: '16px',
+            marginBottom: '12px',
             textAlign: 'center',
           }}>
             Creator Showcase
           </h2>
           <p style={{
             color: colors.textSecondary,
-            fontSize: '16px',
+            fontSize: 'clamp(13px, 2vw, 16px)',
             textAlign: 'center',
-            marginBottom: '60px',
+            marginBottom: 'clamp(32px, 6vw, 60px)',
           }}>
             Featured content made with MacBook Visuals
           </p>
 
-          {/* Placeholder Grid - Add actual video embeds or images */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
+            gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? '140px' : '200px'}, 1fr))`,
+            gap: isMobile ? '8px' : '16px',
           }}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
               <div
@@ -375,7 +337,6 @@ export default function ResultsPage() {
                   overflow: 'hidden',
                 }}
               >
-                {/* Replace with actual video thumbnails or embeds */}
                 <img
                   src={`/images/showcase-${item}.jpg`}
                   alt={`Showcase ${item}`}
@@ -391,41 +352,42 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* CTA Section */}
+        {/* CTA */}
         <section style={{
-          padding: '120px 40px',
+          padding: 'clamp(80px, 12vw, 120px) 20px',
           background: theme === 'light' 
             ? colors.text 
             : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
           textAlign: 'center',
         }}>
           <h2 style={{
-            fontSize: 'clamp(28px, 4vw, 44px)',
+            fontSize: 'clamp(24px, 5vw, 44px)',
             fontWeight: '300',
             color: '#fff',
-            marginBottom: '24px',
+            marginBottom: '20px',
           }}>
             Ready to join them?
           </h2>
           <p style={{
             color: 'rgba(255,255,255,0.8)',
-            fontSize: '16px',
-            marginBottom: '40px',
+            fontSize: 'clamp(14px, 2vw, 16px)',
+            marginBottom: '32px',
             maxWidth: '500px',
-            margin: '0 auto 40px',
+            margin: '0 auto 32px',
             lineHeight: '1.8',
+            padding: '0 20px',
           }}>
-            Start creating viral content with professional templates trusted by thousands of creators.
+            Start creating viral content with professional templates.
           </p>
           <a
             href="mailto:contact@macbookvisuals.com?subject=Interested in MacBook Visuals"
             style={{
               display: 'inline-block',
-              padding: '18px 48px',
+              padding: '16px 40px',
               background: '#fff',
               color: '#1a1a1a',
               textDecoration: 'none',
-              fontSize: '15px',
+              fontSize: '14px',
               fontWeight: '500',
             }}
           >

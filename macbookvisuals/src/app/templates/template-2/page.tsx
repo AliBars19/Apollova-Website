@@ -3,9 +3,18 @@
 import { useTheme } from '@/context/ThemeContext';
 import PublicNavbar from '../../components/PublicNavbar';
 import PublicFooter from '../../components/PublicFooter';
+import { useState, useEffect } from 'react';
 
 export default function Template2Page() {
   const { theme, colors } = useTheme();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 900);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const features = [
     {
@@ -28,17 +37,19 @@ export default function Template2Page() {
         background: colors.background,
         transition: 'all 0.3s ease',
       }}>
-        {/* Hero - Split Screen Layout */}
+        {/* Hero - Split Screen / Stacked on mobile */}
         <section style={{
-          minHeight: '100vh',
+          minHeight: isMobile ? 'auto' : '100vh',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          marginTop: '70px',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          marginTop: '60px',
         }}>
-          {/* Left: Video */}
+          {/* Video */}
           <div style={{
             position: 'relative',
             overflow: 'hidden',
+            height: isMobile ? '50vh' : 'auto',
+            minHeight: isMobile ? '300px' : 'auto',
           }}>
             <video
               autoPlay
@@ -55,39 +66,37 @@ export default function Template2Page() {
             </video>
           </div>
 
-          {/* Right: Text Content */}
+          {/* Text Content */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            padding: '80px',
+            padding: isMobile ? '40px 20px' : '60px',
             background: colors.backgroundSecondary,
           }}>
             <h1 style={{
-              fontSize: 'clamp(36px, 4vw, 52px)',
+              fontSize: 'clamp(32px, 5vw, 52px)',
               fontWeight: '300',
               color: colors.text,
-              marginBottom: '32px',
+              marginBottom: '24px',
               letterSpacing: '-1px',
             }}>
               Template Two
             </h1>
             <p style={{
               color: colors.textSecondary,
-              fontSize: '17px',
+              fontSize: 'clamp(15px, 2vw, 17px)',
               lineHeight: '1.9',
-              marginBottom: '24px',
+              marginBottom: '20px',
             }}>
-              {/* EDIT: Your template 2 description */}
               Dynamic lyric visualizations with fluid motion and modern aesthetics. 
-              This template brings your music to life with elegant transitions and 
-              eye-catching typography designed to capture attention in the first second.
+              This template brings your music to life with elegant transitions.
             </p>
             <p style={{
               color: colors.textSecondary,
-              fontSize: '15px',
+              fontSize: 'clamp(14px, 2vw, 15px)',
               lineHeight: '1.8',
-              marginBottom: '40px',
+              marginBottom: '32px',
             }}>
               Engineered for virality. Built for creators who demand excellence.
             </p>
@@ -96,7 +105,7 @@ export default function Template2Page() {
               href="mailto:contact@macbookvisuals.com?subject=Inquiry about Template Two"
               style={{
                 display: 'inline-block',
-                padding: '16px 40px',
+                padding: '14px 32px',
                 background: theme === 'light' ? colors.text : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
                 color: theme === 'light' ? colors.background : '#fff',
                 textDecoration: 'none',
@@ -110,9 +119,9 @@ export default function Template2Page() {
           </div>
         </section>
 
-        {/* Feature Cards - Alternating Layout */}
+        {/* Feature Cards */}
         <section style={{
-          padding: '120px 40px',
+          padding: 'clamp(60px, 10vw, 120px) 20px',
           maxWidth: '1200px',
           margin: '0 auto',
         }}>
@@ -121,14 +130,14 @@ export default function Template2Page() {
               key={index}
               style={{
                 display: 'grid',
-                gridTemplateColumns: index % 2 === 0 ? '1fr 1fr' : '1fr 1fr',
-                gap: '80px',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                gap: isMobile ? '24px' : '60px',
                 alignItems: 'center',
-                marginBottom: index < features.length - 1 ? '100px' : 0,
+                marginBottom: index < features.length - 1 ? 'clamp(48px, 8vw, 100px)' : 0,
               }}
             >
-              {/* Image - Alternates position */}
-              <div style={{ order: index % 2 === 0 ? 1 : 2 }}>
+              {/* Image */}
+              <div style={{ order: isMobile ? 1 : (index % 2 === 0 ? 1 : 2) }}>
                 <div style={{
                   aspectRatio: '4/3',
                   overflow: 'hidden',
@@ -148,18 +157,18 @@ export default function Template2Page() {
               </div>
 
               {/* Text */}
-              <div style={{ order: index % 2 === 0 ? 2 : 1 }}>
+              <div style={{ order: isMobile ? 2 : (index % 2 === 0 ? 2 : 1) }}>
                 <h3 style={{
-                  fontSize: '28px',
+                  fontSize: 'clamp(22px, 3vw, 28px)',
                   fontWeight: '400',
                   color: colors.text,
-                  marginBottom: '20px',
+                  marginBottom: '16px',
                 }}>
                   {feature.title}
                 </h3>
                 <p style={{
                   color: colors.textSecondary,
-                  fontSize: '16px',
+                  fontSize: 'clamp(14px, 2vw, 16px)',
                   lineHeight: '1.8',
                 }}>
                   {feature.description}
@@ -171,7 +180,7 @@ export default function Template2Page() {
 
         {/* Enquiries Section */}
         <section style={{
-          padding: '100px 40px',
+          padding: 'clamp(60px, 10vw, 100px) 20px',
           background: colors.backgroundSecondary,
         }}>
           <div style={{
@@ -180,29 +189,30 @@ export default function Template2Page() {
             textAlign: 'center',
           }}>
             <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 40px)',
+              fontSize: 'clamp(24px, 4vw, 40px)',
               fontWeight: '300',
               color: colors.text,
-              marginBottom: '24px',
+              marginBottom: '20px',
             }}>
               Ready to create?
             </h2>
             <p style={{
               color: colors.textSecondary,
-              fontSize: '16px',
+              fontSize: 'clamp(14px, 2vw, 16px)',
               lineHeight: '1.8',
-              marginBottom: '40px',
+              marginBottom: '32px',
             }}>
               Get in touch to discuss licensing and start creating viral content today.
             </p>
             <a
               href="mailto:contact@macbookvisuals.com?subject=Inquiry about Template Two"
               style={{
-                fontSize: '20px',
+                fontSize: 'clamp(16px, 2.5vw, 20px)',
                 color: colors.text,
                 textDecoration: 'none',
                 borderBottom: `1px solid ${colors.text}`,
-                paddingBottom: '8px',
+                paddingBottom: '6px',
+                wordBreak: 'break-all',
               }}
             >
               contact@macbookvisuals.com
