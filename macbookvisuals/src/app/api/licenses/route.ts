@@ -20,12 +20,11 @@ export async function GET(request: NextRequest) {
         hw_fingerprint,
         last_verified,
         revoked,
-        notes,
-        created_at
+        notes
       FROM licenses 
-      ORDER BY created_at DESC
+      ORDER BY purchase_date DESC
     `);
-
+    
     const licenses: any[] = [];
     while (stmt.step()) {
       const row = stmt.getAsObject();
@@ -37,37 +36,34 @@ export async function GET(request: NextRequest) {
     }
     stmt.free();
 
-    return NextResponse.json({ 
-      success: true, 
-      licenses 
-    });
+    return NextResponse.json({ licenses });
   } catch (error) {
     console.error('Error fetching licenses:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch licenses' },
+      { error: 'Failed to fetch licenses' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/licenses - Create new license
+// POST /api/licenses - Create a new license
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { customer_name, customer_email, price_paid, notes } = body;
 
-    // Validate required fields
     if (!customer_name || !customer_email || price_paid === undefined) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { error: 'Missing required fields: customer_name, customer_email, price_paid' },
         { status: 400 }
       );
     }
 
     const db = await getDatabase();
+    
     const id = generateId();
-    const licenseKey = generateLicenseKey();
-    const now = new Date().toISOString();
+    const license_key = generateLicenseKey();
+    const purchase_date = new Date().toISOString();
 
     db.run(`
       INSERT INTO licenses (
@@ -79,31 +75,32 @@ export async function POST(request: NextRequest) {
         price_paid,
         activated,
         revoked,
-        notes,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)
-    `, [id, licenseKey, customer_email, customer_name, now, price_paid, notes || '', now]);
+        notes
+      ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?)
+    `, [id, license_key, customer_email, customer_name, purchase_date, price_paid, notes || '']);
 
     saveDatabase();
 
-    return NextResponse.json({
-      success: true,
-      license: {
-        id,
-        license_key: licenseKey,
-        customer_email,
-        customer_name,
-        purchase_date: now,
-        price_paid,
-        activated: false,
-        revoked: false,
-        notes: notes || '',
-      }
-    });
+    const license = {
+      id,
+      license_key,
+      customer_email,
+      customer_name,
+      purchase_date,
+      price_paid,
+      activated: false,
+      activation_date: null,
+      hw_fingerprint: null,
+      last_verified: null,
+      revoked: false,
+      notes: notes || '',
+    };
+
+    return NextResponse.json({ license }, { status: 201 });
   } catch (error) {
     console.error('Error creating license:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create license' },
+      { error: 'Failed to create license' },
       { status: 500 }
     );
   }
