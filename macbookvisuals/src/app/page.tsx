@@ -14,19 +14,19 @@ export default function HomePage() {
       href: '/templates/template-1',
       image: '/images/template-1-preview.jpg',
       title: 'Template One',
-      description: 'A stunning visual experience that transforms your music into captivating animations.',
+      description: 'The core of our lyric content, infused into a virtual MacBook sets the level of quality for your content.',
     },
     {
       href: '/templates/template-2',
       image: '/images/template-2-preview.jpg',
       title: 'Template Two',
-      description: 'Dynamic lyric visualizations with fluid motion and modern aesthetics.',
+      description: 'Our most viral template yet, revitalising musics two most iconic formats into a visual masterpiece.',
     },
     {
       href: '/templates/template-3',
       image: '/images/template-3-preview.jpg',
       title: 'Template Three',
-      description: 'Minimalist elegance meets powerful impact for worldwide audiences.',
+      description: 'Iconic, simple and viral are the only words for our most dynamic format.',
     },
   ];
 
