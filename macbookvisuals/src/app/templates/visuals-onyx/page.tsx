@@ -18,12 +18,12 @@ export default function Template3Page() {
 
   const features = [
     {
-      image: '/images/template-3-feature-1.png',
+      image: '/images/Visuals-Onyx-feature-1.png',
       title: 'Minimalist Design',
       description: 'Clean aesthetics that let your music and lyrics take center stage.',
     },
     {
-      image: '/images/template-3-feature-2.png',
+      image: '/images/Visuals-Onyx-feature-2.png',
       title: 'Universal Appeal',
       description: 'Timeless design language that works across all genres and audiences.',
     },
@@ -71,7 +71,7 @@ export default function Template3Page() {
                 objectFit: 'cover',
               }}
             >
-              <source src="/videos/template-3-promo.mp4" type="video/mp4" />
+              <source src="/videos/visuals-onyx-promo.mp4" type="video/mp4" />
             </video>
           </div>
 
@@ -88,7 +88,7 @@ export default function Template3Page() {
               marginBottom: '20px',
               letterSpacing: '-1px',
             }}>
-              Template Three
+              Visuals Onyx
             </h1>
             <p style={{
               color: colors.textSecondary,
@@ -220,7 +220,7 @@ export default function Template3Page() {
               Ready to elevate your content? Get in touch to discuss licensing options.
             </p>
             <a
-              href="mailto:contact@macbookvisuals.com?subject=Inquiry about Template Three"
+              href="mailto:contact@macbookvisuals.com?subject=Inquiry about Visuals Onyx"
               style={{
                 display: 'inline-block',
                 padding: '16px 40px',

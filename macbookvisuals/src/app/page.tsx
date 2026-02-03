@@ -11,21 +11,21 @@ export default function HomePage() {
   // Template cards data - EDIT THESE
   const templates = [
     {
-      href: '/templates/template-1',
-      image: '/images/template-1-preview.jpg',
-      title: 'Template One',
+      href: '/templates/Visuals Aurora',
+      image: '/images/visuals-aurora-preview.jpg',
+      title: 'Visuals Aurora',
       description: 'The core of our lyric content, infused into a virtual MacBook sets the level of quality for your content.',
     },
     {
-      href: '/templates/template-2',
-      image: '/images/template-2-preview.jpg',
-      title: 'Template Two',
+      href: '/templates/Visuals Nova',
+      image: '/images/visuals-nova-preview.jpg',
+      title: 'Visuals Nova',
       description: 'Our most viral template yet, revitalising musics two most iconic formats into a visual masterpiece.',
     },
     {
-      href: '/templates/template-3',
-      image: '/images/template-3-preview.jpg',
-      title: 'Template Three',
+      href: '/templates/Visuals Onyx',
+      image: '/images/visuals-onyx-preview.jpg',
+      title: 'Visuals Onyx',
       description: 'Iconic, simple and viral are the only words for our most dynamic format.',
     },
   ];

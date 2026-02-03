@@ -57,9 +57,9 @@ export default function PublicFooter() {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
-                { href: '/templates/template-1', label: 'Template One' },
-                { href: '/templates/template-2', label: 'Template Two' },
-                { href: '/templates/template-3', label: 'Template Three' },
+                { href: '/templates/visuals-aurora', label: 'Visuals Aurora' },
+                { href: '/templates/visuals-nova', label: 'Visuals Nova' },
+                { href: '/templates/visuals-onyx', label: 'Visuals Onyx' },
               ].map((link) => (
                 <Link
                   key={link.href}

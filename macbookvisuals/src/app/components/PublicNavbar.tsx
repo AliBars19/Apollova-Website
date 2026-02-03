@@ -30,9 +30,9 @@ export default function PublicNavbar() {
   };
 
   const templates = [
-    { href: '/templates/template-1', label: 'Template One' },
-    { href: '/templates/template-2', label: 'Template Two' },
-    { href: '/templates/template-3', label: 'Template Three' },
+    { href: '/templates/visuals-aurora', label: 'Visuals Aurora' },
+    { href: '/templates/visuals-nova', label: 'Visuals Nova' },
+    { href: '/templates/visuals-onyx', label: 'Visuals Onyx' },
   ];
 
   return (

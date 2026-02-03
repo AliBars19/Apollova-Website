@@ -9,12 +9,12 @@ export default function Template1Page() {
 
   const features = [
     {
-      image: '/images/template-1-feature-1.png',
+      image: '/images/visuals-aurora-feature-1.png',
       title: 'Dynamic Animations',
       description: 'Fluid motion graphics that sync perfectly with your music beats and rhythm.',
     },
     {
-      image: '/images/template-1-feature-2.png',
+      image: '/images/visuals-aurora-feature-2.png',
       title: 'Easy Customization',
       description: 'Change colors, fonts, and timing with simple control layers - no plugins required.',
     },
@@ -46,7 +46,7 @@ export default function Template1Page() {
               objectFit: 'cover',
             }}
           >
-            <source src="/videos/template-1-promo.mp4" type="video/mp4" />
+            <source src="/videos/visuals-aurora-promo.mp4" type="video/mp4" />
           </video>
         </section>
 
@@ -64,7 +64,7 @@ export default function Template1Page() {
             marginBottom: '24px',
             letterSpacing: '-1px',
           }}>
-            Template One
+            Visuals Aurora
           </h1>
           <p style={{
             color: colors.textSecondary,
@@ -155,7 +155,7 @@ export default function Template1Page() {
                 color: colors.text,
                 marginBottom: '20px',
               }}>
-                Interested in Template One?
+                Interested in Visuals Aurora?
               </h2>
               <p style={{
                 color: colors.textSecondary,
@@ -180,7 +180,7 @@ export default function Template1Page() {
                 Enquire now
               </p>
               <a
-                href="mailto:contact@macbookvisuals.com?subject=Inquiry about Template One"
+                href="mailto:contact@macbookvisuals.com?subject=Inquiry about Visuals Aurora"
                 style={{
                   fontSize: 'clamp(16px, 2.5vw, 24px)',
                   color: colors.text,
