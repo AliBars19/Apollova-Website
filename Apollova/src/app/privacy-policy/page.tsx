@@ -2,8 +2,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | MacBookVisuals",
-  description: "Privacy policy for macbookvisuals.com. We collect no personal data and store uploads only temporarily.",
+  title: "Privacy Policy | Apollova",
+  description: "Privacy policy for contact@apollova.co.uk . We collect no personal data and store uploads only temporarily.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -15,9 +15,9 @@ export default function PrivacyPolicyPage() {
       <section className="space-y-6 text-lg leading-relaxed w-full">
 
         <p>
-          Welcome to <strong>MacBookVisuals</strong> (accessible via{" "}
-          <em>macbookvisuals.com</em>, <em>macbookvisuals.co.uk</em>, and{" "}
-          <em>macbookvisuals.uk</em>). We are committed to privacy and transparency.
+          Welcome to <strong>Apollova</strong> (accessible via{" "}
+          <em>apollova.co.uk</em>, <em>apollova.co.uk</em>, and{" "}
+          <em>apollova.co.uk</em>). We are committed to privacy and transparency.
         </p>
 
         <h2 className="text-2xl font-semibold mt-8">1. Information We Collect</h2>
@@ -59,7 +59,7 @@ export default function PrivacyPolicyPage() {
           As we do not store any personal information, rights related to accessing or deleting stored
           data do not apply. If you have questions regarding temporary file storage, contact us at:
         </p>
-        <p className="font-semibold">contact@macbookvisuals.com</p>
+        <p className="font-semibold">contact@apollova.com</p>
 
         <h2 className="text-2xl font-semibold mt-8">6. Changes to This Policy</h2>
         <p>

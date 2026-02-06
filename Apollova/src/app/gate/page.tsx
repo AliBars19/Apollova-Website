@@ -75,7 +75,7 @@ export default function PasswordGate() {
               marginBottom: "8px",
             }}
           >
-            MacBook Visuals
+            Apollova
           </h1>
           <p style={{ color: "#aaa", fontSize: "14px" }}>
             Private Access

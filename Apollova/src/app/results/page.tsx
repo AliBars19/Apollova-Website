@@ -26,7 +26,7 @@ export default function ResultsPage() {
 
   const testimonials = [
     {
-      quote: "MacBook Visuals completely transformed my content. I went from 1K to 100K followers in 3 months.",
+      quote: "Apollova completely transformed my content. I went from 1K to 100K followers in 3 months.",
       author: "Creator Name",
       role: "TikTok Creator",
       stats: "1.2M views on first video",
@@ -151,7 +151,7 @@ export default function ResultsPage() {
             textAlign: 'center',
             marginBottom: 'clamp(32px, 6vw, 60px)',
           }}>
-            Before and after using MacBook Visuals
+            Before and after using Apollova
           </p>
 
           <div style={{
@@ -319,7 +319,7 @@ export default function ResultsPage() {
             textAlign: 'center',
             marginBottom: 'clamp(32px, 6vw, 60px)',
           }}>
-            Featured content made with MacBook Visuals
+            Featured content made with Apollova
           </p>
 
           <div style={{
@@ -380,7 +380,7 @@ export default function ResultsPage() {
             Start creating viral content with professional templates.
           </p>
           <a
-            href="mailto:contact@macbookvisuals.com?subject=Interested in MacBook Visuals"
+            href="mailto:contact@apollova.co.uk?subject=Interested in Apollova"
             style={{
               display: 'inline-block',
               padding: '16px 40px',

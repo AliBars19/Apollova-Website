@@ -53,7 +53,7 @@ export default function LoginPage() {
     <main className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <h1>🎥 Macbook Visuals</h1>
+          <h1>🎥 Apollova</h1>
           <h2>Video Publisher</h2>
           <p>Connect your accounts to start publishing videos</p>
         </div>

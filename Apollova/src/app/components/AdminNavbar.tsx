@@ -69,7 +69,7 @@ export default function AdminNavbar() {
             WebkitTextFillColor: 'transparent',
             textDecoration: 'none',
           }}>
-            MacBook Visuals
+            Apollova
           </Link>
           <span style={{
             padding: '3px 8px',

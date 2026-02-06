@@ -32,7 +32,7 @@ export default function PublicFooter() {
               color: colors.text,
               marginBottom: '12px',
             }}>
-              MacBook Visuals
+              Apollova
             </div>
             <p style={{
               color: colors.textSecondary,
@@ -57,9 +57,9 @@ export default function PublicFooter() {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
-                { href: '/templates/visuals-aurora', label: 'Visuals Aurora' },
-                { href: '/templates/visuals-nova', label: 'Visuals Nova' },
-                { href: '/templates/visuals-onyx', label: 'Visuals Onyx' },
+                { href: '/templates/apollova-aurora', label: 'Apollova Aurora' },
+                { href: '/templates/apollova-nova', label: 'Apollova Nova' },
+                { href: '/templates/apollova-onyx', label: 'Apollova Onyx' },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -118,7 +118,7 @@ export default function PublicFooter() {
               Contact
             </h4>
             <a
-              href="mailto:contact@macbookvisuals.com"
+              href="mailto:contact@apollova.co.uk"
               style={{
                 color: colors.accent,
                 textDecoration: 'none',
@@ -126,7 +126,7 @@ export default function PublicFooter() {
                 wordBreak: 'break-all',
               }}
             >
-              contact@macbookvisuals.com
+              contact@apollova.co.uk
             </a>
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function PublicFooter() {
           gap: '12px',
         }}>
           <p style={{ color: colors.textSecondary, fontSize: '12px' }}>
-            © {new Date().getFullYear()} MacBook Visuals
+            © {new Date().getFullYear()} Apollova
           </p>
           
           {/* Hidden Admin Link */}

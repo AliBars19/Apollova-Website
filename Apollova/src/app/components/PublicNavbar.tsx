@@ -30,9 +30,9 @@ export default function PublicNavbar() {
   };
 
   const templates = [
-    { href: '/templates/visuals-aurora', label: 'Visuals Aurora' },
-    { href: '/templates/visuals-nova', label: 'Visuals Nova' },
-    { href: '/templates/visuals-onyx', label: 'Visuals Onyx' },
+    { href: '/templates/apollova-aurora', label: 'Apollova Aurora' },
+    { href: '/templates/apollova-nova', label: 'Apollova Nova' },
+    { href: '/templates/apollova-onyx', label: 'Apollova Onyx' },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default function PublicNavbar() {
               textDecoration: 'none',
               letterSpacing: '-0.5px',
             }}>
-              MacBook Visuals
+              Apollova
             </Link>
 
             {/* Theme Toggle */}
@@ -225,7 +225,7 @@ export default function PublicNavbar() {
             {/* Desktop CTA */}
             {!isMobile && (
               <a
-                href="mailto:contact@macbookvisuals.com?subject=Inquiry about MacBook Visuals"
+                href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova"
                 style={{
                   padding: '10px 24px',
                   background: theme === 'light' ? colors.text : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
@@ -358,7 +358,7 @@ export default function PublicNavbar() {
 
             {/* Mobile CTA */}
             <a
-              href="mailto:contact@macbookvisuals.com?subject=Inquiry about MacBook Visuals"
+              href="mailto:contact@apollova.com?subject=Inquiry about Apollova"
               style={{
                 marginTop: '24px',
                 padding: '16px 24px',

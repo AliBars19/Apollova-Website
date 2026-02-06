@@ -9,12 +9,12 @@ export default function Template1Page() {
 
   const features = [
     {
-      image: '/images/visuals-aurora-feature-1.png',
+      image: '/images/apollova-aurora-feature-1.png',
       title: 'Dynamic Animations',
       description: 'Fluid motion graphics that sync perfectly with your music beats and rhythm.',
     },
     {
-      image: '/images/visuals-aurora-feature-2.png',
+      image: '/images/apollova-aurora-feature-2.png',
       title: 'Easy Customization',
       description: 'Change colors, fonts, and timing with simple control layers - no plugins required.',
     },
@@ -46,7 +46,7 @@ export default function Template1Page() {
               objectFit: 'cover',
             }}
           >
-            <source src="/videos/visuals-aurora-promo.mp4" type="video/mp4" />
+            <source src="/videos/apollova-aurora-promo.mp4" type="video/mp4" />
           </video>
         </section>
 
@@ -180,7 +180,7 @@ export default function Template1Page() {
                 Enquire now
               </p>
               <a
-                href="mailto:contact@macbookvisuals.com?subject=Inquiry about Visuals Aurora"
+                href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova Aurora"
                 style={{
                   fontSize: 'clamp(16px, 2.5vw, 24px)',
                   color: colors.text,
@@ -192,7 +192,7 @@ export default function Template1Page() {
                   wordBreak: 'break-all',
                 }}
               >
-                contact@macbookvisuals.com
+                contact@apollova.co.uk
               </a>
             </div>
           </div>

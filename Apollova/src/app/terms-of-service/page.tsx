@@ -2,8 +2,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | MacBookVisuals",
-  description: "Terms governing the use of macbookvisuals.com. Uploads are temporary; no accounts or data collection.",
+  title: "Terms of Service | Apollova",
+  description: "Terms governing the use of Apollova.co.uk . Uploads are temporary; no accounts or data collection.",
 };
 
 export default function TermsPage() {
@@ -14,8 +14,8 @@ export default function TermsPage() {
 
       <section className="space-y-6 text-lg leading-relaxed text-center">
         <p>
-          These Terms of Service govern your use of <strong>macbookvisuals.com</strong>,{" "}
-          <strong>macbookvisuals.co.uk</strong>, and <strong>macbookvisuals.uk</strong>. By using our
+          These Terms of Service govern your use of <strong>apollova.co.uk</strong>,{" "}
+          <strong>apollova.co.uk</strong>, and <strong>apollova.co.uk</strong>. By using our
           website, you agree to the following terms.
         </p>
 
@@ -66,7 +66,7 @@ export default function TermsPage() {
         <p>
           For questions regarding these Terms of Service, email us at:
         </p>
-        <p className="font-semibold">contact@macbookvisuals.com</p>
+        <p className="font-semibold">contact@apollova.co.uk</p>
       </section>
     </main>
   );
