@@ -1,7 +1,8 @@
 // app/types.ts
 
-export type VideoStatus = "draft" | "scheduled" | "publishing" | "published" | "failed";
-export type PlatformStatus = "pending" | "published" | "failed";
+export type VideoStatus = "draft" | "scheduled" | "publishing" | "published" | "failed" | "partial";
+export type PlatformStatus = "pending" | "published" | "failed" | "processing";
+export type AccountId = "aurora" | "nova";
 
 export interface Video {
   id: string;           
@@ -10,10 +11,14 @@ export interface Video {
   uploadedAt: string;   
   scheduledAt?: string; 
   status: VideoStatus;
+  
+  // Which account to publish to
+  account: AccountId;
 
   tiktok: {
     caption: string;
     status: PlatformStatus;
+    publishId?: string;
     videoId?: string;
     publishedAt?: string;
     error?: string | null;

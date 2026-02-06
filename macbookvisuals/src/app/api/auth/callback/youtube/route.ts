@@ -1,14 +1,15 @@
 // src/app/api/auth/callback/youtube/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { loadTokens, saveTokens, AccountId } from '@/utils/tokenManager';
 
-const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
-    
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const state = searchParams.get('state'); // Account ID passed from authorize
+
+  // Validate account from state
+  const account: AccountId = (state === 'aurora' || state === 'nova') ? state : 'aurora';
 
   // Handle user denial
   if (error) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     : 'http://localhost:3000/api/auth/callback/youtube';
 
   try {
-    console.log('Exchanging code for YouTube tokens...');
+    console.log(`Exchanging code for YouTube tokens (account: ${account})...`);
 
     // Exchange authorization code for access token
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -65,8 +66,29 @@ export async function GET(request: NextRequest) {
     }
 
     const tokens = await tokenResponse.json();
-
     console.log('YouTube tokens received successfully');
+
+    // Get channel name
+    let channelName = '';
+    try {
+      const channelResponse = await fetch(
+        'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.access_token}`,
+          },
+        }
+      );
+      if (channelResponse.ok) {
+        const channelData = await channelResponse.json();
+        if (channelData.items && channelData.items.length > 0) {
+          channelName = channelData.items[0].snippet.title;
+          console.log(`Channel name: ${channelName}`);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to get channel name:', e);
+    }
 
     // Calculate expiration time
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
@@ -77,34 +99,22 @@ export async function GET(request: NextRequest) {
       refreshToken: tokens.refresh_token,
       expiresAt: expiresAt,
       tokenType: tokens.token_type,
+      channelName: channelName,
     };
 
-    // Ensure data directory exists
-    const dataDir = path.dirname(TOKENS_FILE);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+    // Load existing tokens and update the specific account
+    const allTokens = loadTokens();
+    allTokens.accounts[account].youtube = youtubeTokenData;
+    saveTokens(allTokens);
 
-    // Load existing tokens file or create new one
-    let allTokens: any = {};
-    if (fs.existsSync(TOKENS_FILE)) {
-      allTokens = JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf-8'));
-    }
-
-    // Update YouTube tokens
-    allTokens.youtube = youtubeTokenData;
-
-    // Save to file
-    fs.writeFileSync(TOKENS_FILE, JSON.stringify(allTokens, null, 2));
-
-    console.log('YouTube tokens saved to:', TOKENS_FILE);
+    console.log(`YouTube tokens saved for account: ${account}`);
 
     // Redirect to success page
-    return NextResponse.redirect(
-      process.env.NODE_ENV === 'production'
-        ? 'https://macbookvisuals.com/auth-success?platform=youtube'
-        : 'http://localhost:3000/auth-success?platform=youtube'
-    );
+    const successUrl = process.env.NODE_ENV === 'production'
+      ? `https://macbookvisuals.com/auth-success?platform=youtube&account=${account}`
+      : `http://localhost:3000/auth-success?platform=youtube&account=${account}`;
+
+    return NextResponse.redirect(successUrl);
   } catch (error) {
     console.error('Error during YouTube OAuth:', error);
     return NextResponse.json(

@@ -1,15 +1,12 @@
-// src/app/api/auth/tiktok/authorize/route.ts
-import { NextResponse } from 'next/server';
+// src/app/api/auth/tiktok/authorise/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 /**
  * Generate PKCE code verifier and challenge
  */
 function generatePKCE() {
-  // Generate random code verifier (43-128 characters)
   const codeVerifier = crypto.randomBytes(32).toString('base64url');
-  
-  // Generate code challenge from verifier using SHA256
   const codeChallenge = crypto
     .createHash('sha256')
     .update(codeVerifier)
@@ -19,10 +16,21 @@ function generatePKCE() {
 }
 
 /**
- * GET /api/auth/tiktok/authorize
+ * GET /api/auth/tiktok/authorise?account=aurora|nova
  * Redirects user to TikTok OAuth consent screen
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const account = searchParams.get('account') || 'aurora';
+  
+  // Validate account
+  if (account !== 'aurora' && account !== 'nova') {
+    return NextResponse.json(
+      { error: 'Invalid account. Must be "aurora" or "nova"' },
+      { status: 400 }
+    );
+  }
+
   const clientKey = process.env.TIKTOK_CLIENT_KEY;
   
   if (!clientKey) {
@@ -47,8 +55,12 @@ export async function GET() {
   // Generate PKCE values
   const { codeVerifier, codeChallenge } = generatePKCE();
   
-  // Generate random state for CSRF protection
-  const state = crypto.randomBytes(16).toString('base64url');
+  // Generate random state that includes account info
+  const stateData = JSON.stringify({ 
+    account, 
+    csrf: crypto.randomBytes(16).toString('base64url') 
+  });
+  const state = Buffer.from(stateData).toString('base64url');
 
   // Build TikTok OAuth URL
   const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize/');
@@ -60,13 +72,12 @@ export async function GET() {
   authUrl.searchParams.set('code_challenge', codeChallenge);
   authUrl.searchParams.set('code_challenge_method', 'S256');
 
-  console.log('Redirecting to TikTok OAuth:', authUrl.toString());
-  console.log('Code verifier (save for callback):', codeVerifier);
+  console.log(`Redirecting to TikTok OAuth for account: ${account}`);
 
   // Create response with redirect
   const response = NextResponse.redirect(authUrl.toString());
   
-  // Store code_verifier in cookie so callback can access it
+  // Store code_verifier in cookie
   response.cookies.set('tiktok_code_verifier', codeVerifier, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -79,7 +90,7 @@ export async function GET() {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 600, // 10 minutes
+    maxAge: 600,
   });
 
   return response;

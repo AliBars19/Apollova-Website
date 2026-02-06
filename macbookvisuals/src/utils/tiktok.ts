@@ -1,7 +1,5 @@
-// Fixed TikTok publish with proper status polling
-// Add this to your tiktok utils file
-
-import { getValidTikTokToken } from './tokenManager';
+// src/utils/tiktok.ts
+import { getValidTikTokToken, AccountId } from './tokenManager';
 import fs from 'fs';
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
@@ -22,13 +20,14 @@ interface TikTokPublishOptions {
 
 export async function publishToTikTokCompliant(
   videoPath: string,
-  options: TikTokPublishOptions
+  options: TikTokPublishOptions,
+  accountId: AccountId = 'aurora'
 ) {
-  console.log('Publishing to TikTok (compliant):', videoPath);
+  console.log(`Publishing to TikTok (account: ${accountId}):`, videoPath);
   console.log('Options:', options);
 
   try {
-    const accessToken = await getValidTikTokToken();
+    const accessToken = await getValidTikTokToken(accountId);
     const videoBuffer = fs.readFileSync(videoPath);
     const videoSize = videoBuffer.length;
 
@@ -191,5 +190,45 @@ export async function publishToTikTokCompliant(
   } catch (error) {
     console.error('TikTok publish error:', error);
     throw error;
+  }
+}
+
+/**
+ * Get TikTok user info for an account
+ */
+export async function getTikTokUserInfo(accountId: AccountId): Promise<{
+  openId?: string;
+  username?: string;
+  displayName?: string;
+} | null> {
+  try {
+    const accessToken = await getValidTikTokToken(accountId);
+    
+    const response = await fetch(
+      'https://open.tiktokapis.com/v2/user/info/?fields=open_id,username,display_name',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.data && data.data.user) {
+      return {
+        openId: data.data.user.open_id,
+        username: data.data.user.username,
+        displayName: data.data.user.display_name,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to get TikTok user info:', error);
+    return null;
   }
 }

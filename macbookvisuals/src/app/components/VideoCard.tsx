@@ -1,99 +1,149 @@
 "use client";
 
 import { useState } from "react";
-import type { Video } from "../types";
+import type { Video, AccountId } from "../types";
 
 interface VideoCardProps {
   video: Video;
-  onSave: (updated: Video) => void;
+  onSave: (video: Video) => void;
   onPublish: (videoId: string) => void;
-  onPublishYouTube: (videoId: string) => void;
-  onPublishBoth: (videoId: string) => void;
+  onPublishYouTube?: (videoId: string) => void;
+  onPublishBoth?: (videoId: string) => void;
   onDelete: (videoId: string) => void;
 }
 
-export default function VideoCard({
-  video,
-  onSave,
-  onPublish,
+export default function VideoCard({ 
+  video, 
+  onSave, 
+  onPublish, 
   onPublishYouTube,
   onPublishBoth,
-  onDelete,
+  onDelete 
 }: VideoCardProps) {
   const [editing, setEditing] = useState(false);
   const [caption, setCaption] = useState(video.tiktok.caption);
   const [scheduledAt, setScheduledAt] = useState(video.scheduledAt || "");
+  const [account, setAccount] = useState<AccountId>(video.account || 'aurora');
 
   const handleSave = () => {
-    const updated = {
+    onSave({
       ...video,
       tiktok: { ...video.tiktok, caption },
-      scheduledAt,
-    };
-    onSave(updated);
+      scheduledAt: scheduledAt || undefined,
+      account,
+    });
     setEditing(false);
   };
 
-  const tiktokPublished = video.tiktok.status === "published";
-  const youtubePublished = video.youtube.status === "published";
-  const bothPublished = tiktokPublished && youtubePublished;
+  const getStatusClass = () => {
+    switch (video.status) {
+      case "draft": return "status-draft";
+      case "scheduled": return "status-scheduled";
+      case "published": return "status-published";
+      default: return "status-draft";
+    }
+  };
+
+  const accountColors = {
+    aurora: { bg: '#8B5CF6', text: '#fff' },
+    nova: { bg: '#F59E0B', text: '#000' },
+  };
 
   return (
     <div className="card video-card">
-      {/* Video Preview */}
+      {/* Video Thumbnail */}
       <div className="video-thumb">
-        <video 
-          src={video.url.replace(/ /g, '%20')} 
-          controls
-          preload="metadata"
-          style={{ width: "100%", maxHeight: "300px" }}
-          onError={(e) => {
-            console.error('Video load error:', video.url);
+        <video
+          src={video.url}
+          style={{ maxHeight: "200px", width: "100%", objectFit: "contain" }}
+          controls={false}
+          muted
+          onMouseOver={(e) => (e.target as HTMLVideoElement).play()}
+          onMouseOut={(e) => {
+            const vid = e.target as HTMLVideoElement;
+            vid.pause();
+            vid.currentTime = 0;
           }}
         />
       </div>
 
-      {/* Filename & Status */}
+      {/* Meta Info */}
       <div className="video-meta">
         <p className="video-filename">{video.filename}</p>
-        <span className={`status status-${video.status}`}>{video.status}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Account Badge */}
+          <span style={{
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontSize: '10px',
+            fontWeight: '600',
+            background: accountColors[video.account || 'aurora'].bg,
+            color: accountColors[video.account || 'aurora'].text,
+            textTransform: 'uppercase',
+          }}>
+            {video.account || 'aurora'}
+          </span>
+          <span className={`status ${getStatusClass()}`}>
+            {video.status}
+          </span>
+        </div>
       </div>
 
-      {/* Platform Status */}
-      <div style={{ display: 'flex', gap: '8px', fontSize: '13px', marginTop: '8px' }}>
-        <span style={{ 
-          padding: '4px 8px', 
-          borderRadius: '6px', 
-          background: tiktokPublished ? '#12351a' : '#333',
-          color: tiktokPublished ? '#8bff9c' : '#888'
+      {/* Platform Statuses */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        marginTop: '8px',
+        fontSize: '11px'
+      }}>
+        <span style={{
+          padding: '2px 8px',
+          borderRadius: '4px',
+          background: video.tiktok.status === 'published' ? '#065f46' : '#333',
+          color: video.tiktok.status === 'published' ? '#10b981' : '#888',
         }}>
-          {tiktokPublished ? '✓' : '○'} TikTok
+          TikTok: {video.tiktok.status}
         </span>
-        <span style={{ 
-          padding: '4px 8px', 
-          borderRadius: '6px', 
-          background: youtubePublished ? '#12351a' : '#333',
-          color: youtubePublished ? '#8bff9c' : '#888'
+        <span style={{
+          padding: '2px 8px',
+          borderRadius: '4px',
+          background: video.youtube.status === 'published' ? '#065f46' : '#333',
+          color: video.youtube.status === 'published' ? '#10b981' : '#888',
         }}>
-          {youtubePublished ? '✓' : '○'} YouTube
+          YouTube: {video.youtube.status}
         </span>
       </div>
 
-      {/* Error Messages */}
-      {video.tiktok.error && (
-        <div style={{ fontSize: '12px', color: '#ff6b81', marginTop: '8px' }}>
-          TikTok: {video.tiktok.error}
-        </div>
-      )}
-      {video.youtube.error && (
-        <div style={{ fontSize: '12px', color: '#ff6b81', marginTop: '8px' }}>
-          YouTube: {video.youtube.error}
-        </div>
-      )}
-
-      {/* Edit Mode */}
+      {/* Edit Form */}
       {editing ? (
-        <div>
+        <div style={{ marginTop: "12px" }}>
+          {/* Account Selector */}
+          <div className="field">
+            <span>Publish Account</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {(['aurora', 'nova'] as AccountId[]).map((acc) => (
+                <button
+                  key={acc}
+                  onClick={() => setAccount(acc)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: account === acc ? `2px solid ${accountColors[acc].bg}` : '2px solid #333',
+                    background: account === acc ? accountColors[acc].bg + '20' : '#111',
+                    color: account === acc ? accountColors[acc].bg : '#888',
+                    cursor: 'pointer',
+                    fontWeight: account === acc ? '600' : '400',
+                    textTransform: 'capitalize',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {acc}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="field">
             <span>Caption</span>
             <textarea
@@ -104,7 +154,7 @@ export default function VideoCard({
           </div>
 
           <div className="field">
-            <span>Schedule (optional)</span>
+            <span>Schedule</span>
             <input
               type="datetime-local"
               value={scheduledAt}
@@ -113,99 +163,74 @@ export default function VideoCard({
           </div>
 
           <div className="video-actions">
-            <button className="btn primary" onClick={handleSave}>
-              Save
-            </button>
             <button className="btn outline" onClick={() => setEditing(false)}>
               Cancel
+            </button>
+            <button className="btn primary" onClick={handleSave}>
+              Save
             </button>
           </div>
         </div>
       ) : (
-        <div>
-          {/* Caption Display */}
-          <div className="field">
-            <span>Caption</span>
-            <p style={{ 
-              margin: '4px 0 0', 
-              fontSize: '13px', 
-              color: '#ccc',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {caption}
-            </p>
-          </div>
+        <>
+          <p style={{ 
+            fontSize: "13px", 
+            color: "#aaa", 
+            marginTop: "8px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+          }}>
+            {video.tiktok.caption || "No caption"}
+          </p>
 
-          {/* Action Buttons */}
-          <div className="video-actions" style={{ flexDirection: 'column', gap: '8px' }}>
-            {!bothPublished && (
+          <div className="video-actions" style={{ flexWrap: 'wrap' }}>
+            <button className="btn outline" onClick={() => setEditing(true)}>
+              Edit
+            </button>
+
+            {video.status !== 'published' && (
               <>
-                {/* TikTok Button - Opens Compliance Drawer */}
-                {!tiktokPublished && (
-                  <button 
-                    className="btn primary" 
-                    onClick={() => onPublish(video.id)}
-                    style={{
-                      width: '100%',
-                      background: 'linear-gradient(to right, #00f5ff, #ff0050)',
-                      border: 'none'
-                    }}
-                  >
-                    📱 Post to TikTok (Compliant)
-                  </button>
-                )}
+                <button 
+                  className="btn outline" 
+                  onClick={() => onPublish(video.id)}
+                  style={{ borderColor: '#69C9D0', color: '#69C9D0' }}
+                >
+                  TikTok
+                </button>
 
-                {/* YouTube Button */}
-                {!youtubePublished && (
+                {onPublishYouTube && (
                   <button 
-                    className="btn primary" 
+                    className="btn outline" 
                     onClick={() => onPublishYouTube(video.id)}
-                    style={{
-                      width: '100%',
-                      background: '#FF0000',
-                      border: 'none'
-                    }}
+                    style={{ borderColor: '#FF0000', color: '#FF0000' }}
                   >
-                    📺 Publish to YouTube
+                    YouTube
                   </button>
                 )}
 
-                {/* Publish Both Button */}
-                {!tiktokPublished && !youtubePublished && (
+                {onPublishBoth && (
                   <button 
                     className="btn primary" 
                     onClick={() => onPublishBoth(video.id)}
-                    style={{
-                      width: '100%',
-                      background: 'linear-gradient(to right, #6366f1, #8b5cf6)',
-                      border: 'none'
-                    }}
                   >
-                    🚀 Publish Both (Public)
+                    Both
                   </button>
                 )}
               </>
             )}
 
-            {/* Edit & Delete */}
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-              <button 
-                className="btn outline" 
-                onClick={() => setEditing(true)}
-                style={{ flex: 1 }}
-              >
-                Edit
-              </button>
-              <button 
-                className="btn outline" 
-                onClick={() => onDelete(video.id)}
-                style={{ flex: 1 }}
-              >
-                Delete
-              </button>
-            </div>
+            <button 
+              className="btn outline" 
+              onClick={() => onDelete(video.id)}
+              style={{ borderColor: '#ff6b81', color: '#ff6b81' }}
+            >
+              Delete
+            </button>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { publishToYouTube } from '@/utils/youtube';
 import { publishToTikTokCompliant } from '@/utils/tiktok';
+import { AccountId } from '@/utils/tokenManager';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const VIDEOS_FILE = path.join(DATA_DIR, 'videos.json');
@@ -16,6 +17,7 @@ interface Video {
   uploadedAt: string;
   status: string;
   scheduledAt?: string;
+  account: AccountId;
   tiktok: {
     caption: string;
     status: string;
@@ -71,6 +73,10 @@ export async function POST(
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
+    // Get account from video (defaults to 'aurora' for backwards compatibility)
+    const accountId: AccountId = video.account || 'aurora';
+    console.log(`Using account: ${accountId}`);
+
     const videoPath = path.join(UPLOADS_DIR, video.filename);
     console.log(`Video: ${video.filename}`);
 
@@ -81,10 +87,9 @@ export async function POST(
     // TikTok Publishing
     if (platform === 'tiktok' || platform === 'both') {
       try {
-        console.log('📱 Publishing to TikTok with compliance data...');
-        const tiktokResult = await publishToTikTokCompliant(videoPath, publishData);
+        console.log(`📱 Publishing to TikTok (${accountId})...`);
+        const tiktokResult = await publishToTikTokCompliant(videoPath, publishData, accountId);
 
-        // Check if publish completed successfully
         if (tiktokResult.success && tiktokResult.status === 'PUBLISH_COMPLETE') {
           console.log('✓ TikTok publish succeeded');
           video.tiktok.status = 'published';
@@ -94,7 +99,6 @@ export async function POST(
           tiktokSuccess = true;
           results.tiktok = { success: true, videoId: tiktokResult.postId };
         } else {
-          // Publish initiated but not complete yet
           console.log('⚠️  TikTok publish incomplete:', tiktokResult.status);
           video.tiktok.status = 'processing';
           video.tiktok.publishId = tiktokResult.publishId;
@@ -112,14 +116,15 @@ export async function POST(
     // YouTube Publishing
     if (platform === 'youtube' || platform === 'both') {
       try {
-        console.log('📺 Publishing to YouTube...');
+        console.log(`📺 Publishing to YouTube (${accountId})...`);
         const youtubeResult = await publishToYouTube(
           videoPath,
           video.youtube.title,
           video.youtube.description,
           video.youtube.tags,
           video.youtube.category,
-          video.youtube.privacy as 'public' | 'private' | 'unlisted'
+          video.youtube.privacy as 'public' | 'private' | 'unlisted',
+          accountId
         );
 
         if (youtubeResult.success) {

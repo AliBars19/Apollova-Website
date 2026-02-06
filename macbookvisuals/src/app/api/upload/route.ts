@@ -1,67 +1,123 @@
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
-import { parseFilename, generateCaption } from "@/utils/fileParser";
+// src/app/api/upload/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
+import fs from 'fs/promises';
+import { AccountId } from '@/utils/tokenManager';
 
-const ROOT = path.resolve("./");
-const DATA_FILE = path.join(ROOT, "data", "videos.json");
-const UPLOAD_DIR = path.join(ROOT, "public", "uploads");
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const VIDEOS_FILE = path.join(DATA_DIR, 'videos.json');
 
-export async function POST(req: NextRequest) {
-  const formData = await req.formData();
-  const file = formData.get("file") as File | null;
-
-  if (!file) {
-    return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-  }
-
-  // Ensure folders exist
-  if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  if (!fs.existsSync(path.dirname(DATA_FILE))) fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]");
-
-  // Parse filename to extract song title and artist
-  const { title, artist } = parseFilename(file.name);
-  console.log(`Parsed - Title: "${title}" | Artist: "${artist}"`);
-
-  // Generate caption automatically
-  const caption = generateCaption(title, artist);
-  console.log(`Generated caption: ${caption}`);
-
-  // Save video file
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  const filePath = path.join(UPLOAD_DIR, file.name);
-  fs.writeFileSync(filePath, buffer);
-  console.log(`Video saved: ${file.name}`);
-
-  // Create video record with platform-specific data
-  const videos = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-
-  const video = {
-    id: crypto.randomUUID(),
-    filename: file.name,
-    url: `/uploads/${file.name}`,
-    uploadedAt: new Date().toISOString(),
-    status: "draft",
-    tiktok: {
-      caption: caption,
-      status: "pending"
-    },
-    youtube: {
-      title: `${title} - ${artist}`,
-      description: caption,
-      tags: ["fyp", "musica", "macbook", title, artist],
-      category: "10", // Music category
-      privacy: "public",
-      status: "pending"
-    }
+interface Video {
+  id: string;
+  filename: string;
+  url: string;
+  uploadedAt: string;
+  status: string;
+  scheduledAt?: string;
+  account: AccountId;
+  tiktok: {
+    caption: string;
+    status: string;
   };
+  youtube: {
+    title: string;
+    description: string;
+    tags: string[];
+    category: string;
+    privacy: string;
+    status: string;
+  };
+}
 
-  videos.push(video);
-  fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
+async function readVideos(): Promise<Video[]> {
+  try {
+    const data = await fs.readFile(VIDEOS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
 
-  console.log(`Video metadata saved with ID: ${video.id}`);
-  return NextResponse.json({ ok: true, video });
+async function writeVideos(videos: Video[]) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(VIDEOS_FILE, JSON.stringify(videos, null, 2));
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('video') as File | null;
+    const account = (formData.get('account') as AccountId) || 'aurora';
+
+    if (!file) {
+      return NextResponse.json(
+        { error: 'No video file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Validate account
+    if (account !== 'aurora' && account !== 'nova') {
+      return NextResponse.json(
+        { error: 'Invalid account. Must be "aurora" or "nova"' },
+        { status: 400 }
+      );
+    }
+
+    // Create uploads directory if it doesn't exist
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filename = `${timestamp}_${originalName}`;
+    const filepath = path.join(UPLOADS_DIR, filename);
+
+    // Save file
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await fs.writeFile(filepath, buffer);
+
+    // Create video metadata
+    const videoId = `vid_${timestamp}`;
+    const video: Video = {
+      id: videoId,
+      filename: filename,
+      url: `/uploads/${filename}`,
+      uploadedAt: new Date().toISOString(),
+      status: 'draft',
+      account: account,
+      tiktok: {
+        caption: '',
+        status: 'pending',
+      },
+      youtube: {
+        title: originalName.replace(/\.[^/.]+$/, ''), // Remove extension
+        description: '',
+        tags: [],
+        category: '10', // Music
+        privacy: 'public',
+        status: 'pending',
+      },
+    };
+
+    // Save to videos.json
+    const videos = await readVideos();
+    videos.push(video);
+    await writeVideos(videos);
+
+    console.log(`Video uploaded: ${filename} (account: ${account})`);
+
+    return NextResponse.json({
+      success: true,
+      video: video,
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { status: 500 }
+    );
+  }
 }

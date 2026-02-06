@@ -1,29 +1,30 @@
-// src/lib/youtube.ts
-import { getValidYouTubeToken } from './tokenManager';
+// src/utils/youtube.ts
+import { getValidYouTubeToken, AccountId } from './tokenManager';
 import fs from 'fs';
 
-export interface YouTubePublishResult {
+interface YouTubeUploadResult {
   success: boolean;
   videoId?: string;
   error?: string;
 }
 
 /**
- * Publishes a video to YouTube using the Data API v3
+ * Publish video to YouTube using a specific account
  */
 export async function publishToYouTube(
   videoPath: string,
   title: string,
   description: string,
   tags: string[],
-  categoryId: string = '10', // Music
-  privacyStatus: 'public' | 'private' | 'unlisted' = 'public'
-): Promise<YouTubePublishResult> {
+  category: string = '10', // Music category
+  privacy: 'public' | 'private' | 'unlisted' = 'public',
+  accountId: AccountId = 'aurora'
+): Promise<YouTubeUploadResult> {
   try {
-    console.log('Publishing to YouTube:', videoPath);
-
-    // Get valid access token (auto-refreshes if needed)
-    const accessToken = await getValidYouTubeToken();
+    console.log(`Publishing to YouTube (account: ${accountId})...`);
+    
+    // Get valid access token for the specific account
+    const accessToken = await getValidYouTubeToken(accountId);
 
     // Read video file
     const videoBuffer = fs.readFileSync(videoPath);
@@ -31,66 +32,68 @@ export async function publishToYouTube(
 
     console.log(`Video size: ${(videoSize / 1024 / 1024).toFixed(2)} MB`);
 
-    // Prepare metadata
-    const metadata = {
-      snippet: {
-        title: title,
-        description: description,
-        tags: tags,
-        categoryId: categoryId,
-      },
-      status: {
-        privacyStatus: privacyStatus,
-        selfDeclaredMadeForKids: false,
-      },
-    };
-
-    // Create boundary for multipart upload
-    const boundary = '-------314159265358979323846';
-    const delimiter = `\r\n--${boundary}\r\n`;
-    const closeDelimiter = `\r\n--${boundary}--`;
-
-    // Build multipart body
-    const metadataText = JSON.stringify(metadata);
-    
-    const multipartBody = Buffer.concat([
-      Buffer.from(delimiter),
-      Buffer.from('Content-Type: application/json; charset=UTF-8\r\n\r\n'),
-      Buffer.from(metadataText),
-      Buffer.from(delimiter),
-      Buffer.from('Content-Type: video/mp4\r\n\r\n'),
-      videoBuffer,
-      Buffer.from(closeDelimiter),
-    ]);
-
-    // Upload to YouTube
-    const uploadResponse = await fetch(
-      'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status',
+    // Step 1: Initialize resumable upload
+    const initResponse = await fetch(
+      'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': `multipart/related; boundary=${boundary}`,
-          'Content-Length': multipartBody.length.toString(),
+          'Content-Type': 'application/json',
+          'X-Upload-Content-Type': 'video/mp4',
+          'X-Upload-Content-Length': videoSize.toString(),
         },
-        body: multipartBody,
+        body: JSON.stringify({
+          snippet: {
+            title: title,
+            description: description,
+            tags: tags,
+            categoryId: category,
+          },
+          status: {
+            privacyStatus: privacy,
+            selfDeclaredMadeForKids: false,
+          },
+        }),
       }
     );
 
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.text();
-      console.error('YouTube upload failed:', errorData);
-      throw new Error(`YouTube upload failed: ${errorData}`);
+    if (!initResponse.ok) {
+      const errorText = await initResponse.text();
+      console.error('YouTube init failed:', errorText);
+      throw new Error(`Failed to initialize upload: ${initResponse.status}`);
     }
 
-    const responseData = await uploadResponse.json();
-    const videoId = responseData.id;
+    // Get the upload URL from the response headers
+    const uploadUrl = initResponse.headers.get('location');
+    if (!uploadUrl) {
+      throw new Error('No upload URL received from YouTube');
+    }
 
-    console.log('✓ YouTube publish complete! Video ID:', videoId);
+    console.log('Upload initialized, uploading video...');
+
+    // Step 2: Upload the video
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'video/mp4',
+        'Content-Length': videoSize.toString(),
+      },
+      body: videoBuffer,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('YouTube upload failed:', errorText);
+      throw new Error(`Failed to upload video: ${uploadResponse.status}`);
+    }
+
+    const uploadResult = await uploadResponse.json();
+    console.log('YouTube upload successful! Video ID:', uploadResult.id);
 
     return {
       success: true,
-      videoId: videoId,
+      videoId: uploadResult.id,
     };
 
   } catch (error) {
@@ -103,30 +106,42 @@ export async function publishToYouTube(
 }
 
 /**
- * Gets YouTube channel info (for testing authentication)
+ * Get YouTube channel info for an account
  */
-export async function getYouTubeChannelInfo(): Promise<any> {
+export async function getYouTubeChannelInfo(accountId: AccountId): Promise<{
+  channelId?: string;
+  channelTitle?: string;
+  subscriberCount?: string;
+} | null> {
   try {
-    const accessToken = await getValidYouTubeToken();
-
+    const accessToken = await getValidYouTubeToken(accountId);
+    
     const response = await fetch(
-      'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+      'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true',
       {
-        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );
 
     if (!response.ok) {
-      throw new Error('Failed to get channel info');
+      return null;
     }
 
     const data = await response.json();
-    return data.items[0];
+    if (data.items && data.items.length > 0) {
+      const channel = data.items[0];
+      return {
+        channelId: channel.id,
+        channelTitle: channel.snippet.title,
+        subscriberCount: channel.statistics.subscriberCount,
+      };
+    }
+
+    return null;
   } catch (error) {
-    console.error('Error getting YouTube channel info:', error);
-    throw error;
+    console.error('Failed to get YouTube channel info:', error);
+    return null;
   }
 }

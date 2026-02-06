@@ -1,8 +1,18 @@
-// src/app/api/auth/youtube/authorize/route.ts
-import { NextResponse } from 'next/server';
+// src/app/api/auth/youtube/authorise/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const account = searchParams.get('account') || 'aurora';
+  
+  // Validate account
+  if (account !== 'aurora' && account !== 'nova') {
+    return NextResponse.json(
+      { error: 'Invalid account. Must be "aurora" or "nova"' },
+      { status: 400 }
+    );
+  }
 
-export async function GET() {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   
   if (!clientId) {
@@ -15,7 +25,8 @@ export async function GET() {
   // OAuth scopes needed for YouTube uploads
   const scopes = [
     'https://www.googleapis.com/auth/youtube.upload',
-    'https://www.googleapis.com/auth/youtube'
+    'https://www.googleapis.com/auth/youtube',
+    'https://www.googleapis.com/auth/youtube.readonly', // To get channel name
   ].join(' ');
 
   // Redirect URI (must match what's in Google Cloud Console)
@@ -29,11 +40,11 @@ export async function GET() {
   authUrl.searchParams.set('redirect_uri', redirectUri);
   authUrl.searchParams.set('response_type', 'code');
   authUrl.searchParams.set('scope', scopes);
-  authUrl.searchParams.set('access_type', 'offline'); // Get refresh token
-  authUrl.searchParams.set('prompt', 'consent'); // Force consent screen to get refresh token
+  authUrl.searchParams.set('access_type', 'offline');
+  authUrl.searchParams.set('prompt', 'consent');
+  authUrl.searchParams.set('state', account); // Pass account in state parameter
 
-  console.log('Redirecting to YouTube OAuth:', authUrl.toString());
+  console.log(`Redirecting to YouTube OAuth for account: ${account}`);
 
-  // Redirect user to Google login
   return NextResponse.redirect(authUrl.toString());
 }

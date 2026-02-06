@@ -1,14 +1,18 @@
-// src/lib/tokenManager.ts
+// src/utils/tokenManager.ts
 import fs from 'fs';
 import path from 'path';
 
 const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
+
+// Account identifiers
+export type AccountId = 'aurora' | 'nova';
 
 export interface YouTubeTokens {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
   tokenType: string;
+  channelName?: string;
 }
 
 export interface TikTokTokens {
@@ -16,11 +20,36 @@ export interface TikTokTokens {
   refreshToken: string;
   expiresAt: string;
   tokenType: string;
+  openId?: string;
+  username?: string;
+}
+
+export interface AccountTokens {
+  youtube?: YouTubeTokens;
+  tiktok?: TikTokTokens;
 }
 
 export interface AllTokens {
+  // Multi-account structure
+  accounts: {
+    aurora: AccountTokens;
+    nova: AccountTokens;
+  };
+  // Legacy single-account (for backwards compatibility)
   youtube?: YouTubeTokens;
   tiktok?: TikTokTokens;
+}
+
+/**
+ * Initialize empty token structure
+ */
+function getEmptyTokens(): AllTokens {
+  return {
+    accounts: {
+      aurora: {},
+      nova: {},
+    },
+  };
 }
 
 /**
@@ -28,15 +57,32 @@ export interface AllTokens {
  */
 export function loadTokens(): AllTokens {
   if (!fs.existsSync(TOKENS_FILE)) {
-    return {};
+    return getEmptyTokens();
   }
 
   try {
     const data = fs.readFileSync(TOKENS_FILE, 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    
+    // Migrate old single-account format to multi-account
+    if (!parsed.accounts) {
+      const migrated: AllTokens = getEmptyTokens();
+      // Put old tokens in 'aurora' account by default
+      if (parsed.youtube) {
+        migrated.accounts.aurora.youtube = parsed.youtube;
+      }
+      if (parsed.tiktok) {
+        migrated.accounts.aurora.tiktok = parsed.tiktok;
+      }
+      // Save migrated format
+      saveTokens(migrated);
+      return migrated;
+    }
+    
+    return parsed;
   } catch (error) {
     console.error('Error loading tokens:', error);
-    return {};
+    return getEmptyTokens();
   }
 }
 
@@ -55,26 +101,47 @@ export function saveTokens(tokens: AllTokens): void {
 }
 
 /**
- * Check if YouTube token is expired
+ * Get tokens for a specific account
  */
-export function isYouTubeTokenExpired(tokens: AllTokens): boolean {
-  if (!tokens.youtube) return true;
+export function getAccountTokens(accountId: AccountId): AccountTokens {
+  const tokens = loadTokens();
+  return tokens.accounts[accountId] || {};
+}
+
+/**
+ * Save tokens for a specific account
+ */
+export function saveAccountTokens(accountId: AccountId, accountTokens: AccountTokens): void {
+  const tokens = loadTokens();
+  tokens.accounts[accountId] = {
+    ...tokens.accounts[accountId],
+    ...accountTokens,
+  };
+  saveTokens(tokens);
+}
+
+/**
+ * Check if YouTube token is expired for an account
+ */
+export function isYouTubeTokenExpired(accountId: AccountId): boolean {
+  const accountTokens = getAccountTokens(accountId);
+  if (!accountTokens.youtube) return true;
   
-  const expiresAt = new Date(tokens.youtube.expiresAt);
+  const expiresAt = new Date(accountTokens.youtube.expiresAt);
   const now = new Date();
   
-  // Consider expired if within 5 minutes of expiration
-  const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const bufferTime = 5 * 60 * 1000; // 5 minutes
   return expiresAt.getTime() - now.getTime() < bufferTime;
 }
 
 /**
- * Check if TikTok token is expired
+ * Check if TikTok token is expired for an account
  */
-export function isTikTokTokenExpired(tokens: AllTokens): boolean {
-  if (!tokens.tiktok) return true;
+export function isTikTokTokenExpired(accountId: AccountId): boolean {
+  const accountTokens = getAccountTokens(accountId);
+  if (!accountTokens.tiktok) return true;
   
-  const expiresAt = new Date(tokens.tiktok.expiresAt);
+  const expiresAt = new Date(accountTokens.tiktok.expiresAt);
   const now = new Date();
   
   const bufferTime = 5 * 60 * 1000;
@@ -82,7 +149,7 @@ export function isTikTokTokenExpired(tokens: AllTokens): boolean {
 }
 
 /**
- * Refresh YouTube access token using refresh token
+ * Refresh YouTube access token
  */
 export async function refreshYouTubeToken(refreshToken: string): Promise<YouTubeTokens> {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
@@ -114,46 +181,47 @@ export async function refreshYouTubeToken(refreshToken: string): Promise<YouTube
   }
 
   const data = await response.json();
-
   const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
 
   return {
     accessToken: data.access_token,
-    refreshToken: refreshToken, // Keep the same refresh token
+    refreshToken: refreshToken,
     expiresAt: expiresAt,
     tokenType: data.token_type,
   };
 }
 
 /**
- * Get valid YouTube access token (refreshes if needed)
+ * Get valid YouTube access token for an account (refreshes if needed)
  */
-export async function getValidYouTubeToken(): Promise<string> {
-  const tokens = loadTokens();
+export async function getValidYouTubeToken(accountId: AccountId): Promise<string> {
+  const accountTokens = getAccountTokens(accountId);
 
-  if (!tokens.youtube) {
-    throw new Error('YouTube not authorized. Please authorize first.');
+  if (!accountTokens.youtube) {
+    throw new Error(`YouTube not authorized for ${accountId} account. Please authorize first.`);
   }
 
-  // Check if token is expired
-  if (isYouTubeTokenExpired(tokens)) {
-    console.log('YouTube token expired, refreshing...');
+  if (isYouTubeTokenExpired(accountId)) {
+    console.log(`YouTube token expired for ${accountId}, refreshing...`);
     
-    // Refresh the token
-    const newTokens = await refreshYouTubeToken(tokens.youtube.refreshToken);
+    const newTokens = await refreshYouTubeToken(accountTokens.youtube.refreshToken);
+    
+    // Preserve channel name
+    newTokens.channelName = accountTokens.youtube.channelName;
     
     // Save updated tokens
-    tokens.youtube = newTokens;
+    const tokens = loadTokens();
+    tokens.accounts[accountId].youtube = newTokens;
     saveTokens(tokens);
     
     return newTokens.accessToken;
   }
 
-  return tokens.youtube.accessToken;
+  return accountTokens.youtube.accessToken;
 }
 
 /**
- * Refresh TikTok access token (implement when TikTok is ready)
+ * Refresh TikTok access token
  */
 export async function refreshTikTokToken(refreshToken: string): Promise<TikTokTokens> {
   const clientKey = process.env.TIKTOK_CLIENT_KEY;
@@ -185,7 +253,6 @@ export async function refreshTikTokToken(refreshToken: string): Promise<TikTokTo
   }
 
   const data = await response.json();
-
   const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
 
   return {
@@ -197,25 +264,84 @@ export async function refreshTikTokToken(refreshToken: string): Promise<TikTokTo
 }
 
 /**
- * Get valid TikTok access token (refreshes if needed)
+ * Get valid TikTok access token for an account (refreshes if needed)
  */
-export async function getValidTikTokToken(): Promise<string> {
-  const tokens = loadTokens();
+export async function getValidTikTokToken(accountId: AccountId): Promise<string> {
+  const accountTokens = getAccountTokens(accountId);
 
-  if (!tokens.tiktok) {
-    throw new Error('TikTok not authorized. Please authorize first.');
+  if (!accountTokens.tiktok) {
+    throw new Error(`TikTok not authorized for ${accountId} account. Please authorize first.`);
   }
 
-  if (isTikTokTokenExpired(tokens)) {
-    console.log('TikTok token expired, refreshing...');
+  if (isTikTokTokenExpired(accountId)) {
+    console.log(`TikTok token expired for ${accountId}, refreshing...`);
     
-    const newTokens = await refreshTikTokToken(tokens.tiktok.refreshToken);
+    const newTokens = await refreshTikTokToken(accountTokens.tiktok.refreshToken);
     
-    tokens.tiktok = newTokens;
+    // Preserve openId and username
+    newTokens.openId = accountTokens.tiktok.openId;
+    newTokens.username = accountTokens.tiktok.username;
+    
+    // Save updated tokens
+    const tokens = loadTokens();
+    tokens.accounts[accountId].tiktok = newTokens;
     saveTokens(tokens);
     
     return newTokens.accessToken;
   }
 
-  return tokens.tiktok.accessToken;
+  return accountTokens.tiktok.accessToken;
+}
+
+/**
+ * Get connection status for all accounts
+ */
+export function getAllAccountsStatus(): {
+  aurora: { youtube: boolean; tiktok: boolean };
+  nova: { youtube: boolean; tiktok: boolean };
+} {
+  const tokens = loadTokens();
+  
+  return {
+    aurora: {
+      youtube: !!tokens.accounts.aurora?.youtube,
+      tiktok: !!tokens.accounts.aurora?.tiktok,
+    },
+    nova: {
+      youtube: !!tokens.accounts.nova?.youtube,
+      tiktok: !!tokens.accounts.nova?.tiktok,
+    },
+  };
+}
+
+/**
+ * Get account info (channel names, usernames)
+ */
+export function getAccountInfo(): {
+  aurora: { youtubeName?: string; tiktokName?: string };
+  nova: { youtubeName?: string; tiktokName?: string };
+} {
+  const tokens = loadTokens();
+  
+  return {
+    aurora: {
+      youtubeName: tokens.accounts.aurora?.youtube?.channelName,
+      tiktokName: tokens.accounts.aurora?.tiktok?.username,
+    },
+    nova: {
+      youtubeName: tokens.accounts.nova?.youtube?.channelName,
+      tiktokName: tokens.accounts.nova?.tiktok?.username,
+    },
+  };
+}
+
+/**
+ * Disconnect a platform from an account
+ */
+export function disconnectPlatform(accountId: AccountId, platform: 'youtube' | 'tiktok'): void {
+  const tokens = loadTokens();
+  if (tokens.accounts[accountId]) {
+    delete tokens.accounts[accountId][platform];
+    saveTokens(tokens);
+  }
 }

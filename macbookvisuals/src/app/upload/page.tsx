@@ -1,42 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import AdminNavbar from "../components/AdminNavbar";
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import AdminNavbar from '../components/AdminNavbar';
 
-interface UploadFile {
-  file: File;
-  id: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
-  error?: string;
-}
+type AccountId = 'aurora' | 'nova';
 
-export default function Upload() {
+export default function UploadPage() {
   const router = useRouter();
-  const [files, setFiles] = useState<UploadFile[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [account, setAccount] = useState<AccountId>('aurora');
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (selectedFiles: FileList | null) => {
-    if (!selectedFiles) return;
-
-    const newFiles: UploadFile[] = Array.from(selectedFiles).map((file) => ({
-      file,
-      id: Math.random().toString(36).substring(7),
-      progress: 0,
-      status: 'pending',
-    }));
-
-    setFiles((prev) => [...prev, ...newFiles]);
-  };
-
-  const removeFile = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const handleDrag = (e: React.DragEvent) => {
+  const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -44,287 +22,291 @@ export default function Upload() {
     } else if (e.type === "dragleave") {
       setDragActive(false);
     }
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files);
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(
+      file => file.type.startsWith('video/')
+    );
+    setFiles(prev => [...prev, ...droppedFiles]);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files).filter(
+        file => file.type.startsWith('video/')
+      );
+      setFiles(prev => [...prev, ...selectedFiles]);
     }
   };
 
-  const uploadFile = async (uploadFile: UploadFile): Promise<boolean> => {
-    const formData = new FormData();
-    formData.append("file", uploadFile.file);
-
-    try {
-      setFiles((prev) =>
-        prev.map((f) =>
-          f.id === uploadFile.id ? { ...f, status: 'uploading' } : f
-        )
-      );
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || "Upload failed");
-      }
-
-      setFiles((prev) =>
-        prev.map((f) =>
-          f.id === uploadFile.id ? { ...f, status: 'success', progress: 100 } : f
-        )
-      );
-
-      return true;
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Upload failed";
-      setFiles((prev) =>
-        prev.map((f) =>
-          f.id === uploadFile.id ? { ...f, status: 'error', error: errorMsg } : f
-        )
-      );
-      return false;
-    }
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadAll = async () => {
+  const handleUpload = async () => {
     if (files.length === 0) return;
 
     setUploading(true);
+    setProgress(0);
 
-    // Upload all files in parallel
-    const results = await Promise.all(
-      files.filter(f => f.status === 'pending').map(uploadFile)
-    );
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('video', file);
+        formData.append('account', account);
 
-    setUploading(false);
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-    const successCount = results.filter(Boolean).length;
-    const failCount = results.length - successCount;
+        if (!response.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
 
-    if (successCount > 0) {
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
-    }
+        setProgress(Math.round(((i + 1) / files.length) * 100));
+      }
 
-    if (failCount > 0) {
-      alert(`Uploaded ${successCount} files successfully. ${failCount} failed.`);
+      // Success - redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setUploading(false);
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  const accountColors = {
+    aurora: { bg: '#8B5CF6', text: '#fff' },
+    nova: { bg: '#F59E0B', text: '#000' },
   };
-
-  const pendingCount = files.filter(f => f.status === 'pending').length;
-  const successCount = files.filter(f => f.status === 'success').length;
-  const errorCount = files.filter(f => f.status === 'error').length;
 
   return (
-    <>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
       <AdminNavbar />
-      <main className="upload-page" style={{ paddingTop: '80px' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h1 className="title">Upload Videos</h1>
+      
+      <main style={{ padding: '100px 20px 40px', maxWidth: '800px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Upload Videos</h1>
+        <p style={{ color: '#888', marginBottom: '32px' }}>
+          Upload videos to publish to TikTok and YouTube
+        </p>
 
-          {/* Drag and Drop Area */}
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: `3px dashed ${dragActive ? '#00f5ff' : '#333'}`,
-              borderRadius: '16px',
-              padding: '60px 40px',
-              textAlign: 'center',
-              background: dragActive ? 'rgba(0, 245, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              marginBottom: '32px'
-            }}
-          >
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>
-              {dragActive ? '📂' : '🎥'}
-            </div>
-            <h2 style={{ margin: '0 0 8px', fontSize: '20px', color: '#fff' }}>
-              {dragActive ? 'Drop videos here' : 'Click or drag videos to upload'}
-            </h2>
-            <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>
-              Upload multiple MP4 files at once
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/mp4"
-              multiple
-              onChange={(e) => handleFileSelect(e.target.files)}
-              style={{ display: 'none' }}
-            />
+        {/* Account Selector */}
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            color: '#888',
+            fontSize: '14px'
+          }}>
+            Select Account
+          </label>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {(['aurora', 'nova'] as AccountId[]).map((acc) => (
+              <button
+                key={acc}
+                onClick={() => setAccount(acc)}
+                style={{
+                  flex: 1,
+                  padding: '16px 24px',
+                  borderRadius: '12px',
+                  border: account === acc 
+                    ? `2px solid ${accountColors[acc].bg}` 
+                    : '2px solid #333',
+                  background: account === acc 
+                    ? accountColors[acc].bg + '15' 
+                    : '#111',
+                  color: account === acc ? accountColors[acc].bg : '#666',
+                  cursor: 'pointer',
+                  fontWeight: account === acc ? '600' : '400',
+                  fontSize: '16px',
+                  textTransform: 'capitalize',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span style={{ fontSize: '24px' }}>
+                  {acc === 'aurora' ? '🌌' : '⭐'}
+                </span>
+                <span>Visuals {acc.charAt(0).toUpperCase() + acc.slice(1)}</span>
+                <span style={{ fontSize: '11px', opacity: 0.7 }}>
+                  12 videos/day
+                </span>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Stats */}
-          {files.length > 0 && (
+        {/* Drop Zone */}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          style={{
+            border: `2px dashed ${dragActive ? accountColors[account].bg : '#333'}`,
+            borderRadius: '16px',
+            padding: '48px',
+            textAlign: 'center',
+            background: dragActive ? accountColors[account].bg + '10' : '#111',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onClick={() => document.getElementById('file-input')?.click()}
+        >
+          <input
+            id="file-input"
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+          />
+          
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📹</div>
+          <p style={{ fontSize: '18px', marginBottom: '8px' }}>
+            Drag & drop videos here
+          </p>
+          <p style={{ color: '#666', fontSize: '14px' }}>
+            or click to browse • MP4, MOV, WebM
+          </p>
+        </div>
+
+        {/* File List */}
+        {files.length > 0 && (
+          <div style={{ marginTop: '24px' }}>
             <div style={{ 
               display: 'flex', 
-              gap: '16px', 
-              marginBottom: '24px',
-              padding: '16px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '12px'
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '12px'
             }}>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#888' }}>{files.length}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>Total</div>
-              </div>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffcf66' }}>{pendingCount}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>Pending</div>
-              </div>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8bff9c' }}>{successCount}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>Success</div>
-              </div>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff6b81' }}>{errorCount}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>Failed</div>
-              </div>
-            </div>
-          )}
-
-          {/* File List */}
-          {files.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '16px', marginBottom: '16px', color: '#ccc' }}>
-                Files ({files.length})
+              <h3 style={{ fontSize: '16px' }}>
+                {files.length} video{files.length !== 1 ? 's' : ''} selected
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {files.map((uploadFile) => (
-                  <div
-                    key={uploadFile.id}
-                    style={{
-                      padding: '16px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '12px',
-                      border: `1px solid ${
-                        uploadFile.status === 'success' ? '#8bff9c' :
-                        uploadFile.status === 'error' ? '#ff6b81' :
-                        uploadFile.status === 'uploading' ? '#00f5ff' :
-                        '#333'
-                      }`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '16px'
-                    }}
-                  >
-                    {/* Icon */}
-                    <div style={{ fontSize: '32px' }}>
-                      {uploadFile.status === 'success' ? '✅' :
-                       uploadFile.status === 'error' ? '❌' :
-                       uploadFile.status === 'uploading' ? '⏳' :
-                       '🎬'}
-                    </div>
-
-                    {/* File Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ 
+              <span style={{
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                background: accountColors[account].bg + '20',
+                color: accountColors[account].bg,
+                fontWeight: '500',
+              }}>
+                → {account.charAt(0).toUpperCase() + account.slice(1)} Account
+              </span>
+            </div>
+            
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '8px',
+              maxHeight: '300px',
+              overflowY: 'auto',
+            }}>
+              {files.map((file, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    background: '#1a1a1a',
+                    borderRadius: '8px',
+                    borderLeft: `3px solid ${accountColors[account].bg}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '20px' }}>🎬</span>
+                    <div>
+                      <p style={{ 
                         fontSize: '14px', 
-                        fontWeight: 'bold', 
-                        color: '#fff',
+                        marginBottom: '2px',
+                        maxWidth: '400px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
                       }}>
-                        {uploadFile.file.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                        {formatFileSize(uploadFile.file.size)} • {uploadFile.status}
-                      </div>
-                      {uploadFile.error && (
-                        <div style={{ fontSize: '11px', color: '#ff6b81', marginTop: '4px' }}>
-                          {uploadFile.error}
-                        </div>
-                      )}
+                        {file.name}
+                      </p>
+                      <p style={{ fontSize: '12px', color: '#666' }}>
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
                     </div>
-
-                    {/* Remove Button */}
-                    {uploadFile.status === 'pending' && (
-                      <button
-                        onClick={() => removeFile(uploadFile.id)}
-                        style={{
-                          padding: '8px 16px',
-                          background: 'rgba(255, 107, 129, 0.1)',
-                          border: '1px solid #ff6b81',
-                          borderRadius: '8px',
-                          color: '#ff6b81',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 107, 129, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 107, 129, 0.1)'}
-                      >
-                        Remove
-                      </button>
-                    )}
                   </div>
-                ))}
-              </div>
+                  <button
+                    onClick={() => removeFile(index)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#ff6b81',
+                      cursor: 'pointer',
+                      fontSize: '18px',
+                      padding: '4px 8px',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
-          )}
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="btn outline"
-              style={{ flex: 1, padding: '16px' }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={uploadAll}
-              disabled={pendingCount === 0 || uploading}
-              className="btn primary"
-              style={{ 
-                flex: 2, 
-                padding: '16px',
-                opacity: pendingCount === 0 || uploading ? 0.5 : 1,
-                cursor: pendingCount === 0 || uploading ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {uploading ? `Uploading ${files.filter(f => f.status === 'uploading').length}...` : `Upload ${pendingCount} ${pendingCount === 1 ? 'Video' : 'Videos'}`}
-            </button>
           </div>
+        )}
 
-          {successCount > 0 && !uploading && (
-            <div style={{
-              marginTop: '24px',
+        {/* Upload Button */}
+        {files.length > 0 && (
+          <button
+            onClick={handleUpload}
+            disabled={uploading}
+            style={{
+              width: '100%',
               padding: '16px',
-              background: 'rgba(139, 255, 156, 0.1)',
-              border: '1px solid #8bff9c',
+              marginTop: '24px',
+              background: uploading ? '#333' : accountColors[account].bg,
+              color: uploading ? '#666' : accountColors[account].text,
+              border: 'none',
               borderRadius: '12px',
-              color: '#8bff9c',
-              textAlign: 'center'
-            }}>
-              ✓ {successCount} {successCount === 1 ? 'video' : 'videos'} uploaded successfully! Redirecting to dashboard...
-            </div>
-          )}
-        </div>
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            {uploading ? (
+              <>Uploading... {progress}%</>
+            ) : (
+              <>Upload {files.length} video{files.length !== 1 ? 's' : ''} to {account.charAt(0).toUpperCase() + account.slice(1)}</>
+            )}
+          </button>
+        )}
+
+        {/* Progress Bar */}
+        {uploading && (
+          <div style={{
+            marginTop: '16px',
+            background: '#1a1a1a',
+            borderRadius: '8px',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              width: `${progress}%`,
+              height: '8px',
+              background: accountColors[account].bg,
+              transition: 'width 0.3s ease',
+            }} />
+          </div>
+        )}
       </main>
-    </>
+    </div>
   );
 }

@@ -1,14 +1,7 @@
 // src/app/api/auth/callback/tiktok/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { loadTokens, saveTokens, AccountId } from '@/utils/tokenManager';
 
-const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
-
-/**
- * GET /api/auth/callback/tiktok?code=...&state=...
- * Receives OAuth code from TikTok and exchanges it for access token
- */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
@@ -41,6 +34,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Parse account from state
+  let account: AccountId = 'aurora';
+  try {
+    const stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
+    if (stateData.account === 'aurora' || stateData.account === 'nova') {
+      account = stateData.account;
+    }
+  } catch (e) {
+    console.error('Failed to parse state, defaulting to aurora');
+  }
+
   // Get code_verifier from cookie
   const codeVerifier = request.cookies.get('tiktok_code_verifier')?.value;
   if (!codeVerifier) {
@@ -66,7 +70,7 @@ export async function GET(request: NextRequest) {
     : 'http://localhost:3000/api/auth/callback/tiktok';
 
   try {
-    console.log('Exchanging code for TikTok tokens...');
+    console.log(`Exchanging code for TikTok tokens (account: ${account})...`);
 
     // Exchange authorization code for access token (with PKCE)
     const tokenResponse = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
@@ -80,7 +84,7 @@ export async function GET(request: NextRequest) {
         code: code,
         grant_type: 'authorization_code',
         redirect_uri: redirectUri,
-        code_verifier: codeVerifier, // PKCE code verifier
+        code_verifier: codeVerifier,
       }),
     });
 
@@ -91,8 +95,29 @@ export async function GET(request: NextRequest) {
     }
 
     const tokens = await tokenResponse.json();
-
     console.log('TikTok tokens received successfully');
+
+    // Get username
+    let username = '';
+    try {
+      const userResponse = await fetch(
+        'https://open.tiktokapis.com/v2/user/info/?fields=display_name,username',
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.access_token}`,
+          },
+        }
+      );
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        if (userData.data && userData.data.user) {
+          username = userData.data.user.username || userData.data.user.display_name || '';
+          console.log(`TikTok username: ${username}`);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to get TikTok username:', e);
+    }
 
     // Calculate expiration time
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
@@ -103,37 +128,24 @@ export async function GET(request: NextRequest) {
       refreshToken: tokens.refresh_token,
       expiresAt: expiresAt,
       tokenType: tokens.token_type,
-      openId: tokens.open_id, // TikTok user ID
+      openId: tokens.open_id,
+      username: username,
     };
 
-    // Ensure data directory exists
-    const dataDir = path.dirname(TOKENS_FILE);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+    // Load existing tokens and update the specific account
+    const allTokens = loadTokens();
+    allTokens.accounts[account].tiktok = tiktokTokenData;
+    saveTokens(allTokens);
 
-    // Load existing tokens file or create new one
-    let allTokens: any = {};
-    if (fs.existsSync(TOKENS_FILE)) {
-      allTokens = JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf-8'));
-    }
-
-    // Update TikTok tokens
-    allTokens.tiktok = tiktokTokenData;
-
-    // Save to file
-    fs.writeFileSync(TOKENS_FILE, JSON.stringify(allTokens, null, 2));
-
-    console.log('TikTok tokens saved to:', TOKENS_FILE);
+    console.log(`TikTok tokens saved for account: ${account}`);
 
     // Create response and clear cookies
     const successUrl = process.env.NODE_ENV === 'production'
-      ? 'https://macbookvisuals.com/auth-success?platform=tiktok'
-      : 'http://localhost:3000/auth-success?platform=tiktok';
+      ? `https://macbookvisuals.com/auth-success?platform=tiktok&account=${account}`
+      : `http://localhost:3000/auth-success?platform=tiktok&account=${account}`;
     
     const response = NextResponse.redirect(successUrl);
     
-    // Clear the temporary cookies
     response.cookies.delete('tiktok_code_verifier');
     response.cookies.delete('tiktok_state');
     
