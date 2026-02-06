@@ -1,14 +1,25 @@
 // src/app/api/tiktok/creator-info/route.ts
-import { NextResponse } from 'next/server';
-import { getValidTikTokToken } from '@/utils/tokenManager';
+import { NextRequest, NextResponse } from 'next/server';
+import { getValidTikTokToken, AccountId } from '@/utils/tokenManager';
 
 /**
- * GET /api/tiktok/creator-info
+ * GET /api/tiktok/creator-info?account=aurora|nova
  * Fetches TikTok creator information required for Direct Post compliance
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const accessToken = await getValidTikTokToken();
+    const { searchParams } = new URL(request.url);
+    const account = (searchParams.get('account') || 'aurora') as AccountId;
+
+    // Validate account
+    if (account !== 'aurora' && account !== 'nova') {
+      return NextResponse.json(
+        { error: 'Invalid account. Must be "aurora" or "nova"' },
+        { status: 400 }
+      );
+    }
+
+    const accessToken = await getValidTikTokToken(account);
 
     const response = await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', {
       method: 'POST',
@@ -32,6 +43,7 @@ export async function GET() {
     
     return NextResponse.json({
       ok: true,
+      account: account,
       creatorInfo: data.data.creator_info,
     });
 
