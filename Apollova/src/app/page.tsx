@@ -259,7 +259,7 @@ export default function HomePage() {
                 Get in touch
               </p>
               <a
-                href="mailto:contact@macbookvisuals.com?subject=Inquiry about MacBook Visuals"
+                href="mailto:contact@apollova.co.uk?subject=Inquiry about MacBook Visuals"
                 style={{
                   fontSize: 'clamp(18px, 3vw, 32px)',
                   color: colors.text,
@@ -270,7 +270,7 @@ export default function HomePage() {
                   wordBreak: 'break-all',
                 }}
               >
-                contact@macbookvisuals.com
+                contact@apollova.co.uk
               </a>
             </div>
           </div>
