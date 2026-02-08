@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import { AccountId } from '@/utils/tokenManager';
+import { parseFilename, generateCaption } from '@/utils/fileParser';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -79,6 +80,25 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     await fs.writeFile(filepath, buffer);
 
+    // Parse title and artist from original filename
+    const { title, artist } = parseFilename(file.name);
+    
+    // Generate caption automatically
+    const caption = generateCaption(title, artist);
+    
+    // Generate YouTube description
+    const description = `${title} by ${artist}\n\n#Shorts #Music #${artist.replace(/[^a-zA-Z0-9]/g, '')}`;
+    
+    // Generate tags
+    const tags = [
+      title.replace(/[^a-zA-Z0-9 ]/g, ''),
+      artist.replace(/[^a-zA-Z0-9 ]/g, ''),
+      'music',
+      'shorts',
+      'lyrics',
+      'viral'
+    ].filter(Boolean);
+
     // Create video metadata
     const videoId = `vid_${timestamp}`;
     const video: Video = {
@@ -89,13 +109,13 @@ export async function POST(request: NextRequest) {
       status: 'draft',
       account: account,
       tiktok: {
-        caption: '',
+        caption: caption,
         status: 'pending',
       },
       youtube: {
-        title: originalName.replace(/\.[^/.]+$/, ''), // Remove extension
-        description: '',
-        tags: [],
+        title: `${title} - ${artist} #shorts`,
+        description: description,
+        tags: tags,
         category: '10', // Music
         privacy: 'public',
         status: 'pending',
@@ -108,6 +128,9 @@ export async function POST(request: NextRequest) {
     await writeVideos(videos);
 
     console.log(`Video uploaded: ${filename} (account: ${account})`);
+    console.log(`  Title: ${title}`);
+    console.log(`  Artist: ${artist}`);
+    console.log(`  Caption: ${caption}`);
 
     return NextResponse.json({
       success: true,
