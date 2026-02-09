@@ -18,12 +18,12 @@ export default function Template2Page() {
 
   const features = [
     {
-      image: '/images/apollova-nova-feature-1.png',
+      image: '/images/apollova-mono-feature-1.png',
       title: 'Social Media Optimized',
       description: 'Pre-configured for vertical 9:16 format, perfect for TikTok and Reels.',
     },
     {
-      image: '/images/apollova-nova-feature-2.png',
+      image: '/images/apollova-mono-feature-2.png',
       title: 'Lyric Sync System',
       description: 'Advanced text animation that perfectly matches your song lyrics and timing.',
     },
@@ -62,7 +62,7 @@ export default function Template2Page() {
                 objectFit: 'cover',
               }}
             >
-              <source src="/videos/apollova-nova-promo.mp4" type="video/mp4" />
+              <source src="/videos/apollova-mono-promo.mp4" type="video/mp4" />
             </video>
           </div>
 
@@ -102,7 +102,7 @@ export default function Template2Page() {
             </p>
 
             <a
-              href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova Nova"
+              href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova Mono"
               style={{
                 display: 'inline-block',
                 padding: '14px 32px',
@@ -205,7 +205,7 @@ export default function Template2Page() {
               Get in touch to discuss licensing and start creating viral content today.
             </p>
             <a
-              href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova Nova"
+              href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova Mono"
               style={{
                 fontSize: 'clamp(16px, 2.5vw, 20px)',
                 color: colors.text,

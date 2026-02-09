@@ -11,21 +11,21 @@ export default function HomePage() {
   // Template cards data - EDIT THESE
   const templates = [
     {
-      href: '/templates/visuals-aurora',
-      image: '/images/visuals-aurora-preview.jpg',
-      title: 'Visuals Aurora',
+      href: '/templates/apollova-aurora',
+      image: '/images/apollova-aurora-preview.jpg',
+      title: 'Apollova Aurora',
       description: 'The core of our lyric content, infused into a virtual MacBook sets the level of quality for your content.',
     },
     {
-      href: '/templates/visuals-nova',
-      image: '/images/visuals-nova-preview.jpg',
-      title: 'Visuals Nova',
+      href: '/templates/apollova-mono',
+      image: '/images/apollova-mono-preview.jpg',
+      title: 'Apollova Mono',
       description: 'Our most viral template yet, revitalising musics two most iconic formats into a visual masterpiece.',
     },
     {
-      href: '/templates/visuals-onyx',
-      image: '/images/visuals-onyx-preview.jpg',
-      title: 'Visuals Onyx',
+      href: '/templates/apollova-onyx',
+      image: '/images/apollova-onyx-preview.jpg',
+      title: 'Apollova Onyx',
       description: 'Iconic, simple and viral are the only words for our most dynamic format.',
     },
   ];
