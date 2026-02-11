@@ -31,7 +31,7 @@ export default function PublicNavbar() {
 
   const templates = [
     { href: '/templates/apollova-aurora', label: 'Apollova Aurora' },
-    { href: '/templates/apollova-nova', label: 'Apollova Nova' },
+    { href: '/templates/apollova-mono', label: 'Apollova Mono' },
     { href: '/templates/apollova-onyx', label: 'Apollova Onyx' },
   ];
 

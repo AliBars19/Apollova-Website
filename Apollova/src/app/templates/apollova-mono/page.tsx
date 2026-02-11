@@ -81,7 +81,7 @@ export default function Template2Page() {
               marginBottom: '24px',
               letterSpacing: '-1px',
             }}>
-              Visuals Nova
+              Visuals Mono
             </h1>
             <p style={{
               color: colors.textSecondary,

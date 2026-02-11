@@ -58,7 +58,7 @@ export default function PublicFooter() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {[
                 { href: '/templates/apollova-aurora', label: 'Apollova Aurora' },
-                { href: '/templates/apollova-nova', label: 'Apollova Nova' },
+                { href: '/templates/apollova-mono', label: 'Apollova Mono' },
                 { href: '/templates/apollova-onyx', label: 'Apollova Onyx' },
               ].map((link) => (
                 <Link

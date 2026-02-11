@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNavbar from '../components/AdminNavbar';
 
-type AccountId = 'aurora' | 'nova';
+type AccountId = 'aurora' | 'mono';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -85,7 +85,7 @@ export default function UploadPage() {
 
   const accountColors = {
     aurora: { bg: '#8B5CF6', text: '#fff' },
-    nova: { bg: '#F59E0B', text: '#000' },
+    mono: { bg: '#F59E0B', text: '#000' },
   };
 
   return (
@@ -109,7 +109,7 @@ export default function UploadPage() {
             Select Account
           </label>
           <div style={{ display: 'flex', gap: '12px' }}>
-            {(['aurora', 'nova'] as AccountId[]).map((acc) => (
+            {(['aurora', 'mono'] as AccountId[]).map((acc) => (
               <button
                 key={acc}
                 onClick={() => setAccount(acc)}
