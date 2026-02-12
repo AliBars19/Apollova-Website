@@ -2,7 +2,7 @@
 
 export type VideoStatus = "draft" | "scheduled" | "publishing" | "published" | "failed" | "partial";
 export type PlatformStatus = "pending" | "published" | "failed" | "processing";
-export type AccountId = "aurora" | "nova";
+export type AccountId = "aurora" | "mono";
 
 export interface Video {
   id: string;           

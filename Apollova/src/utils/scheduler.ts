@@ -128,7 +128,7 @@ export function startScheduler() {
   console.log(`✓ Using base URL: ${baseUrl}`);
   console.log('✓ Checking for scheduled videos every 5 minutes');
   console.log('✓ Will publish to BOTH platforms (YouTube + TikTok)');
-  console.log('✓ Uses account from video metadata (aurora/nova)');
+    console.log('✓ Uses account from video metadata (aurora/mono)');
   console.log('========================================');
 }
 

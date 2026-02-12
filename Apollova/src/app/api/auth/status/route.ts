@@ -15,8 +15,8 @@ export async function GET() {
     const authenticated = 
       accountsStatus.aurora.youtube || 
       accountsStatus.aurora.tiktok ||
-      accountsStatus.nova.youtube ||
-      accountsStatus.nova.tiktok;
+      accountsStatus.mono.youtube ||
+      accountsStatus.mono.tiktok;
 
     return NextResponse.json({
       authenticated,
@@ -27,17 +27,17 @@ export async function GET() {
           youtubeName: accountInfo.aurora.youtubeName || 'Aurora YouTube',
           tiktokName: accountInfo.aurora.tiktokName || 'Aurora TikTok',
         },
-        nova: {
-          youtube: accountsStatus.nova.youtube,
-          tiktok: accountsStatus.nova.tiktok,
-          youtubeName: accountInfo.nova.youtubeName || 'Nova YouTube',
-          tiktokName: accountInfo.nova.tiktokName || 'Nova TikTok',
+        mono: {
+          youtube: accountsStatus.mono.youtube,
+          tiktok: accountsStatus.mono.tiktok,
+          youtubeName: accountInfo.mono.youtubeName || 'Mono YouTube',
+          tiktokName: accountInfo.mono.tiktokName || 'Mono TikTok',
         },
       },
       // Legacy format for backwards compatibility
       platforms: {
-        youtube: accountsStatus.aurora.youtube || accountsStatus.nova.youtube,
-        tiktok: accountsStatus.aurora.tiktok || accountsStatus.nova.tiktok,
+        youtube: accountsStatus.aurora.youtube || accountsStatus.mono.youtube,
+        tiktok: accountsStatus.aurora.tiktok || accountsStatus.mono.tiktok,
       },
     });
   } catch (error) {
@@ -46,7 +46,7 @@ export async function GET() {
       authenticated: false,
       accounts: {
         aurora: { youtube: false, tiktok: false },
-        nova: { youtube: false, tiktok: false },
+        mono: { youtube: false, tiktok: false },
       },
       platforms: { youtube: false, tiktok: false },
     });

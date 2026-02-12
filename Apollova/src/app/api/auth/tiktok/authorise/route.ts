@@ -16,7 +16,7 @@ function generatePKCE() {
 }
 
 /**
- * GET /api/auth/tiktok/authorise?account=aurora|nova
+ * GET /api/auth/tiktok/authorise?account=aurora|mono
  * Redirects user to TikTok OAuth consent screen
  */
 export async function GET(request: NextRequest) {
@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
   const account = searchParams.get('account') || 'aurora';
   
   // Validate account
-  if (account !== 'aurora' && account !== 'nova') {
+  if (account !== 'aurora' && account !== 'mono') {
     return NextResponse.json(
-      { error: 'Invalid account. Must be "aurora" or "nova"' },
+      { error: 'Invalid account. Must be "aurora" or "mono"' },
       { status: 400 }
     );
   }

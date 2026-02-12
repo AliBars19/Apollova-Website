@@ -5,7 +5,7 @@ import path from 'path';
 const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
 
 // Account identifiers
-export type AccountId = 'aurora' | 'nova';
+export type AccountId = 'aurora' | 'mono';
 
 export interface YouTubeTokens {
   accessToken: string;
@@ -33,7 +33,7 @@ export interface AllTokens {
   // Multi-account structure
   accounts: {
     aurora: AccountTokens;
-    nova: AccountTokens;
+    mono: AccountTokens;
   };
   // Legacy single-account (for backwards compatibility)
   youtube?: YouTubeTokens;
@@ -47,7 +47,7 @@ function getEmptyTokens(): AllTokens {
   return {
     accounts: {
       aurora: {},
-      nova: {},
+      mono: {},
     },
   };
 }
@@ -298,7 +298,7 @@ export async function getValidTikTokToken(accountId: AccountId): Promise<string>
  */
 export function getAllAccountsStatus(): {
   aurora: { youtube: boolean; tiktok: boolean };
-  nova: { youtube: boolean; tiktok: boolean };
+  mono: { youtube: boolean; tiktok: boolean };
 } {
   const tokens = loadTokens();
   
@@ -307,9 +307,9 @@ export function getAllAccountsStatus(): {
       youtube: !!tokens.accounts.aurora?.youtube,
       tiktok: !!tokens.accounts.aurora?.tiktok,
     },
-    nova: {
-      youtube: !!tokens.accounts.nova?.youtube,
-      tiktok: !!tokens.accounts.nova?.tiktok,
+    mono: {
+      youtube: !!tokens.accounts.mono?.youtube,
+      tiktok: !!tokens.accounts.mono?.tiktok,
     },
   };
 }
@@ -319,7 +319,7 @@ export function getAllAccountsStatus(): {
  */
 export function getAccountInfo(): {
   aurora: { youtubeName?: string; tiktokName?: string };
-  nova: { youtubeName?: string; tiktokName?: string };
+  mono: { youtubeName?: string; tiktokName?: string };
 } {
   const tokens = loadTokens();
   
@@ -328,9 +328,9 @@ export function getAccountInfo(): {
       youtubeName: tokens.accounts.aurora?.youtube?.channelName,
       tiktokName: tokens.accounts.aurora?.tiktok?.username,
     },
-    nova: {
-      youtubeName: tokens.accounts.nova?.youtube?.channelName,
-      tiktokName: tokens.accounts.nova?.tiktok?.username,
+    mono: {
+      youtubeName: tokens.accounts.mono?.youtube?.channelName,
+      tiktokName: tokens.accounts.mono?.tiktok?.username,
     },
   };
 }

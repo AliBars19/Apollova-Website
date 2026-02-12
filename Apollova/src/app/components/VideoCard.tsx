@@ -46,7 +46,7 @@ export default function VideoCard({
 
   const accountColors = {
     aurora: { bg: '#8B5CF6', text: '#fff' },
-    nova: { bg: '#F59E0B', text: '#000' },
+    mono: { bg: '#F59E0B', text: '#000' },
   };
 
   return (
@@ -121,7 +121,7 @@ export default function VideoCard({
           <div className="field">
             <span>Publish Account</span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {(['aurora', 'nova'] as AccountId[]).map((acc) => (
+              {(['aurora', 'mono'] as AccountId[]).map((acc) => (
                 <button
                   key={acc}
                   onClick={() => setAccount(acc)}

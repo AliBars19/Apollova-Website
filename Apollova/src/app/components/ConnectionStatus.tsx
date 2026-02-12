@@ -13,7 +13,7 @@ interface AuthStatus {
   authenticated: boolean;
   accounts: {
     aurora: AccountStatus;
-    nova: AccountStatus;
+    mono: AccountStatus;
   };
 }
 
@@ -41,7 +41,7 @@ export default function ConnectionStatus() {
 
   const accounts = [
     { id: 'aurora', label: 'Aurora', color: '#8B5CF6' },
-    { id: 'nova', label: 'Nova', color: '#F59E0B' },
+    { id: 'mono', label: 'Mono', color: '#F59E0B' },
   ] as const;
 
   return (
@@ -214,7 +214,7 @@ export default function ConnectionStatus() {
         textAlign: 'center'
       }}>
         {status?.accounts.aurora.youtube && status?.accounts.aurora.tiktok &&
-         status?.accounts.nova.youtube && status?.accounts.nova.tiktok ? (
+         status?.accounts.mono.youtube && status?.accounts.mono.tiktok ? (
           <span style={{ color: '#10b981' }}>
             ✓ All accounts connected — Ready for 24 videos/day
           </span>
