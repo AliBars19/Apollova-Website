@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state'); // Account ID passed from authorize
 
   // Validate account from state
-  const account: AccountId = (state === 'aurora' || state === 'mono') ? state : 'aurora';
+  const account: AccountId = (state === 'aurora' || state === 'mono' || state === 'onyx') ? state : 'aurora';
 
   // Handle user denial
   if (error) {

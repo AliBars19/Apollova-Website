@@ -124,6 +124,11 @@ export async function PATCH(
     video.status = updates.status;
   }
 
+  // Update account if provided
+  if (updates.account && ['aurora', 'mono', 'onyx'].includes(updates.account)) {
+    video.account = updates.account;
+  }
+
   // Save changes
   fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
 

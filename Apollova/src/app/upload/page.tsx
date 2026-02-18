@@ -3,11 +3,13 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNavbar from '../components/AdminNavbar';
+import { useTheme } from '@/context/ThemeContext';
 
-type AccountId = 'aurora' | 'mono';
+type AccountId = 'aurora' | 'mono' | 'onyx';
 
 export default function UploadPage() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [files, setFiles] = useState<File[]>([]);
   const [account, setAccount] = useState<AccountId>('aurora');
   const [uploading, setUploading] = useState(false);
@@ -83,18 +85,19 @@ export default function UploadPage() {
     }
   };
 
-  const accountColors = {
-    aurora: { bg: '#8B5CF6', text: '#fff' },
-    mono: { bg: '#F59E0B', text: '#000' },
+  const accountColors: Record<AccountId, { bg: string; text: string; emoji: string }> = {
+    aurora: { bg: '#8B5CF6', text: '#fff', emoji: '🌌' },
+    mono: { bg: '#F59E0B', text: '#000', emoji: '⭐' },
+    onyx: { bg: '#1E90FF', text: '#fff', emoji: '💎' },
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+    <div style={{ minHeight: '100vh', background: colors.background }}>
       <AdminNavbar />
       
       <main style={{ padding: '100px 20px 40px', maxWidth: '800px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Upload Videos</h1>
-        <p style={{ color: '#888', marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '28px', marginBottom: '8px', color: colors.text }}>Upload Videos</h1>
+        <p style={{ color: colors.textSecondary, marginBottom: '32px' }}>
           Upload videos to publish to TikTok and YouTube
         </p>
 
@@ -103,13 +106,13 @@ export default function UploadPage() {
           <label style={{ 
             display: 'block', 
             marginBottom: '8px', 
-            color: '#888',
+            color: colors.textSecondary,
             fontSize: '14px'
           }}>
             Select Account
           </label>
           <div style={{ display: 'flex', gap: '12px' }}>
-            {(['aurora', 'mono'] as AccountId[]).map((acc) => (
+            {(['aurora', 'mono', 'onyx'] as AccountId[]).map((acc) => (
               <button
                 key={acc}
                 onClick={() => setAccount(acc)}
@@ -119,11 +122,11 @@ export default function UploadPage() {
                   borderRadius: '12px',
                   border: account === acc 
                     ? `2px solid ${accountColors[acc].bg}` 
-                    : '2px solid #333',
+                    : `2px solid ${colors.border}`,
                   background: account === acc 
                     ? accountColors[acc].bg + '15' 
-                    : '#111',
-                  color: account === acc ? accountColors[acc].bg : '#666',
+                    : colors.backgroundSecondary,
+                  color: account === acc ? accountColors[acc].bg : colors.textSecondary,
                   cursor: 'pointer',
                   fontWeight: account === acc ? '600' : '400',
                   fontSize: '16px',
@@ -136,7 +139,7 @@ export default function UploadPage() {
                 }}
               >
                 <span style={{ fontSize: '24px' }}>
-                  {acc === 'aurora' ? '🌌' : '⭐'}
+                  {accountColors[acc].emoji}
                 </span>
                 <span>Visuals {acc.charAt(0).toUpperCase() + acc.slice(1)}</span>
                 <span style={{ fontSize: '11px', opacity: 0.7 }}>
@@ -154,11 +157,11 @@ export default function UploadPage() {
           onDragOver={handleDrag}
           onDrop={handleDrop}
           style={{
-            border: `2px dashed ${dragActive ? accountColors[account].bg : '#333'}`,
+            border: `2px dashed ${dragActive ? accountColors[account].bg : colors.border}`,
             borderRadius: '16px',
             padding: '48px',
             textAlign: 'center',
-            background: dragActive ? accountColors[account].bg + '10' : '#111',
+            background: dragActive ? accountColors[account].bg + '10' : colors.backgroundSecondary,
             transition: 'all 0.2s',
             cursor: 'pointer',
           }}
@@ -174,10 +177,10 @@ export default function UploadPage() {
           />
           
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📹</div>
-          <p style={{ fontSize: '18px', marginBottom: '8px' }}>
+          <p style={{ fontSize: '18px', marginBottom: '8px', color: colors.text }}>
             Drag & drop videos here
           </p>
-          <p style={{ color: '#666', fontSize: '14px' }}>
+          <p style={{ color: colors.textSecondary, fontSize: '14px' }}>
             or click to browse • MP4, MOV, WebM
           </p>
         </div>
@@ -191,7 +194,7 @@ export default function UploadPage() {
               alignItems: 'center',
               marginBottom: '12px'
             }}>
-              <h3 style={{ fontSize: '16px' }}>
+              <h3 style={{ fontSize: '16px', color: colors.text }}>
                 {files.length} video{files.length !== 1 ? 's' : ''} selected
               </h3>
               <span style={{
@@ -201,7 +204,11 @@ export default function UploadPage() {
                 background: accountColors[account].bg + '20',
                 color: accountColors[account].bg,
                 fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
               }}>
+                <span>{accountColors[account].emoji}</span>
                 → {account.charAt(0).toUpperCase() + account.slice(1)} Account
               </span>
             </div>
@@ -221,7 +228,7 @@ export default function UploadPage() {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '12px 16px',
-                    background: '#1a1a1a',
+                    background: colors.backgroundSecondary,
                     borderRadius: '8px',
                     borderLeft: `3px solid ${accountColors[account].bg}`,
                   }}
@@ -236,10 +243,11 @@ export default function UploadPage() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        color: colors.text,
                       }}>
                         {file.name}
                       </p>
-                      <p style={{ fontSize: '12px', color: '#666' }}>
+                      <p style={{ fontSize: '12px', color: colors.textSecondary }}>
                         {(file.size / (1024 * 1024)).toFixed(2)} MB
                       </p>
                     </div>
@@ -272,20 +280,27 @@ export default function UploadPage() {
               width: '100%',
               padding: '16px',
               marginTop: '24px',
-              background: uploading ? '#333' : accountColors[account].bg,
-              color: uploading ? '#666' : accountColors[account].text,
+              background: uploading ? colors.backgroundTertiary : accountColors[account].bg,
+              color: uploading ? colors.textSecondary : accountColors[account].text,
               border: 'none',
               borderRadius: '12px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: uploading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
             }}
           >
             {uploading ? (
               <>Uploading... {progress}%</>
             ) : (
-              <>Upload {files.length} video{files.length !== 1 ? 's' : ''} to {account.charAt(0).toUpperCase() + account.slice(1)}</>
+              <>
+                <span>{accountColors[account].emoji}</span>
+                Upload {files.length} video{files.length !== 1 ? 's' : ''} to {account.charAt(0).toUpperCase() + account.slice(1)}
+              </>
             )}
           </button>
         )}
@@ -294,7 +309,7 @@ export default function UploadPage() {
         {uploading && (
           <div style={{
             marginTop: '16px',
-            background: '#1a1a1a',
+            background: colors.backgroundSecondary,
             borderRadius: '8px',
             overflow: 'hidden',
           }}>

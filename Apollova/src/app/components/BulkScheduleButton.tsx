@@ -60,7 +60,7 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
         onClick={loadScheduleInfo}
         style={{
           padding: '12px 24px',
-          background: 'linear-gradient(to right, #8b5cf6, #ec4899)',
+          background: '#2D004B',
           border: 'none',
           borderRadius: '12px',
           color: 'white',
@@ -104,7 +104,7 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
               padding: '32px',
               maxWidth: '500px',
               width: '90%',
-              border: '1px solid rgba(139, 92, 246, 0.3)',
+              border: '1px solid rgba(45, 0, 75, 0.3)',
             }}
           >
             <h2 style={{ margin: '0 0 24px', fontSize: '24px', color: 'white' }}>
@@ -114,7 +114,7 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
             <div style={{ marginBottom: '24px' }}>
               <div style={{
                 padding: '16px',
-                background: 'rgba(139, 92, 246, 0.1)',
+                background: 'rgba(45, 0, 75, 0.1)',
                 borderRadius: '12px',
                 marginBottom: '16px',
               }}>
@@ -200,7 +200,7 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
                     padding: '12px',
                     background: loading
                       ? '#555'
-                      : 'linear-gradient(to right, #8b5cf6, #ec4899)',
+                      : '#2D004B',
                     border: 'none',
                     borderRadius: '8px',
                     color: 'white',

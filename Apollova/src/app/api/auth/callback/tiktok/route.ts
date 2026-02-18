@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   let account: AccountId = 'aurora';
   try {
     const stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
-    if (stateData.account === 'aurora' || stateData.account === 'mono') {
+    if (stateData.account === 'aurora' || stateData.account === 'mono' || stateData.account === 'onyx') {
       account = stateData.account;
     }
   } catch (e) {

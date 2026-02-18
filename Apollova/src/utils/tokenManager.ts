@@ -5,7 +5,7 @@ import path from 'path';
 const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
 
 // Account identifiers
-export type AccountId = 'aurora' | 'mono';
+export type AccountId = 'aurora' | 'mono' | 'onyx';
 
 export interface YouTubeTokens {
   accessToken: string;
@@ -34,6 +34,7 @@ export interface AllTokens {
   accounts: {
     aurora: AccountTokens;
     mono: AccountTokens;
+    onyx: AccountTokens;
   };
   // Legacy single-account (for backwards compatibility)
   youtube?: YouTubeTokens;
@@ -48,6 +49,7 @@ function getEmptyTokens(): AllTokens {
     accounts: {
       aurora: {},
       mono: {},
+      onyx: {},
     },
   };
 }
@@ -149,9 +151,9 @@ export function isTikTokTokenExpired(accountId: AccountId): boolean {
 }
 
 /**
- * Refresh YouTube access token
+ * Refresh YouTube access token with retry logic
  */
-export async function refreshYouTubeToken(refreshToken: string): Promise<YouTubeTokens> {
+export async function refreshYouTubeToken(refreshToken: string, retries = 3): Promise<YouTubeTokens> {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 
@@ -159,36 +161,73 @@ export async function refreshYouTubeToken(refreshToken: string): Promise<YouTube
     throw new Error('YouTube credentials not configured');
   }
 
-  console.log('Refreshing YouTube access token...');
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Refreshing YouTube access token (attempt ${attempt}/${retries})...`);
 
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        }),
+      });
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    console.error('YouTube token refresh failed:', errorData);
-    throw new Error('Failed to refresh YouTube token');
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`YouTube token refresh failed (attempt ${attempt}):`, errorData);
+        
+        // Check if it's an invalid_grant error (token revoked/expired permanently)
+        if (errorData.includes('invalid_grant')) {
+          throw new Error('YouTube refresh token is invalid or revoked. Please re-authenticate.');
+        }
+        
+        lastError = new Error(`Failed to refresh YouTube token: ${response.status}`);
+        
+        // Wait before retry with exponential backoff
+        if (attempt < retries) {
+          const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        continue;
+      }
+
+      const data = await response.json();
+      const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
+
+      console.log('YouTube token refreshed successfully');
+      
+      return {
+        accessToken: data.access_token,
+        refreshToken: refreshToken,
+        expiresAt: expiresAt,
+        tokenType: data.token_type,
+      };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      
+      // If it's a permanent error (invalid_grant), don't retry
+      if (lastError.message.includes('invalid') || lastError.message.includes('revoked')) {
+        throw lastError;
+      }
+      
+      if (attempt < retries) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`Error occurred, waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
-
-  const data = await response.json();
-  const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString();
-
-  return {
-    accessToken: data.access_token,
-    refreshToken: refreshToken,
-    expiresAt: expiresAt,
-    tokenType: data.token_type,
-  };
+  
+  throw lastError || new Error('Failed to refresh YouTube token after all retries');
 }
 
 /**
@@ -299,6 +338,7 @@ export async function getValidTikTokToken(accountId: AccountId): Promise<string>
 export function getAllAccountsStatus(): {
   aurora: { youtube: boolean; tiktok: boolean };
   mono: { youtube: boolean; tiktok: boolean };
+  onyx: { youtube: boolean; tiktok: boolean };
 } {
   const tokens = loadTokens();
   
@@ -311,6 +351,10 @@ export function getAllAccountsStatus(): {
       youtube: !!tokens.accounts.mono?.youtube,
       tiktok: !!tokens.accounts.mono?.tiktok,
     },
+    onyx: {
+      youtube: !!tokens.accounts.onyx?.youtube,
+      tiktok: !!tokens.accounts.onyx?.tiktok,
+    },
   };
 }
 
@@ -320,6 +364,7 @@ export function getAllAccountsStatus(): {
 export function getAccountInfo(): {
   aurora: { youtubeName?: string; tiktokName?: string };
   mono: { youtubeName?: string; tiktokName?: string };
+  onyx: { youtubeName?: string; tiktokName?: string };
 } {
   const tokens = loadTokens();
   
@@ -331,6 +376,10 @@ export function getAccountInfo(): {
     mono: {
       youtubeName: tokens.accounts.mono?.youtube?.channelName,
       tiktokName: tokens.accounts.mono?.tiktok?.username,
+    },
+    onyx: {
+      youtubeName: tokens.accounts.onyx?.youtube?.channelName,
+      tiktokName: tokens.accounts.onyx?.tiktok?.username,
     },
   };
 }

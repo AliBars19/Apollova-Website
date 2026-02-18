@@ -1,13 +1,13 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function AdminNavbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [loggingOut, setLoggingOut] = useState(false);
+  const { theme, toggleTheme, colors } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -30,17 +30,9 @@ export default function AdminNavbar() {
 
   const isActive = (href: string) => pathname.startsWith(href);
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      setLoggingOut(false);
-    }
-  };
+  // Lewis Hamilton 2020 purple
+  const accentColor = '#2D004B';
+  const accentColorMuted = 'rgba(45, 0, 75, 0.3)';
 
   return (
     <>
@@ -51,9 +43,11 @@ export default function AdminNavbar() {
         right: 0,
         height: '64px',
         zIndex: 1000,
-        background: 'rgba(5, 5, 9, 0.95)',
+        background: theme === 'dark' 
+          ? 'rgba(5, 5, 9, 0.95)' 
+          : 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(102, 126, 234, 0.3)',
+        borderBottom: `1px solid ${accentColorMuted}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -64,20 +58,18 @@ export default function AdminNavbar() {
           <Link href="/dashboard" style={{
             fontSize: '16px',
             fontWeight: 'bold',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: accentColor,
             textDecoration: 'none',
           }}>
             Apollova
           </Link>
           <span style={{
             padding: '3px 8px',
-            background: 'rgba(102, 126, 234, 0.2)',
+            background: `${accentColor}20`,
             borderRadius: '4px',
             fontSize: '10px',
             fontWeight: '600',
-            color: '#667eea',
+            color: accentColor,
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
           }}>
@@ -103,13 +95,13 @@ export default function AdminNavbar() {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
-                    color: isActive(link.href) ? '#fff' : '#aaa',
-                    background: isActive(link.href) ? 'rgba(102, 126, 234, 0.2)' : 'transparent',
+                    color: isActive(link.href) ? colors.text : colors.textSecondary,
+                    background: isActive(link.href) ? `${accentColor}20` : 'transparent',
                     textDecoration: 'none',
                     fontSize: '14px',
                     fontWeight: isActive(link.href) ? '600' : '400',
                     transition: 'all 0.2s ease',
-                    border: isActive(link.href) ? '1px solid rgba(102, 126, 234, 0.3)' : '1px solid transparent',
+                    border: isActive(link.href) ? `1px solid ${accentColorMuted}` : '1px solid transparent',
                   }}
                 >
                   {link.label}
@@ -117,13 +109,13 @@ export default function AdminNavbar() {
               ))}
             </div>
 
-            {/* Right: Back + Logout */}
+            {/* Right: Back + Theme Toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Link
                 href="/"
                 style={{
                   padding: '8px 16px',
-                  color: '#888',
+                  color: colors.textSecondary,
                   textDecoration: 'none',
                   fontSize: '14px',
                 }}
@@ -131,21 +123,24 @@ export default function AdminNavbar() {
                 ← Site
               </Link>
 
+              {/* Theme Toggle */}
               <button
-                onClick={handleLogout}
-                disabled={loggingOut}
+                onClick={toggleTheme}
                 style={{
-                  padding: '8px 16px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  padding: '8px 12px',
+                  background: colors.backgroundSecondary,
+                  border: `1px solid ${colors.border}`,
                   borderRadius: '6px',
-                  color: '#ef4444',
+                  color: colors.text,
                   fontSize: '14px',
-                  cursor: loggingOut ? 'not-allowed' : 'pointer',
-                  opacity: loggingOut ? 0.5 : 1,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
-                {loggingOut ? '...' : 'Logout'}
+                {theme === 'dark' ? '☀️' : '🌙'}
               </button>
             </div>
           </>
@@ -153,40 +148,57 @@ export default function AdminNavbar() {
 
         {/* Mobile Hamburger */}
         {isMobile && (
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '5px',
-            }}
-          >
-            <span style={{
-              width: '24px',
-              height: '2px',
-              background: '#fff',
-              transition: 'all 0.3s ease',
-              transform: mobileMenuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none',
-            }} />
-            <span style={{
-              width: '24px',
-              height: '2px',
-              background: '#fff',
-              opacity: mobileMenuOpen ? 0 : 1,
-              transition: 'all 0.3s ease',
-            }} />
-            <span style={{
-              width: '24px',
-              height: '2px',
-              background: '#fff',
-              transition: 'all 0.3s ease',
-              transform: mobileMenuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none',
-            }} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Theme Toggle (Mobile) */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                padding: '8px',
+                background: 'transparent',
+                border: 'none',
+                color: colors.text,
+                fontSize: '18px',
+                cursor: 'pointer',
+              }}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
+              }}
+            >
+              <span style={{
+                width: '24px',
+                height: '2px',
+                background: colors.text,
+                transition: 'all 0.3s ease',
+                transform: mobileMenuOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none',
+              }} />
+              <span style={{
+                width: '24px',
+                height: '2px',
+                background: colors.text,
+                opacity: mobileMenuOpen ? 0 : 1,
+                transition: 'all 0.3s ease',
+              }} />
+              <span style={{
+                width: '24px',
+                height: '2px',
+                background: colors.text,
+                transition: 'all 0.3s ease',
+                transform: mobileMenuOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none',
+              }} />
+            </button>
+          </div>
         )}
       </nav>
 
@@ -198,7 +210,7 @@ export default function AdminNavbar() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: '#050509',
+          background: colors.background,
           zIndex: 999,
           padding: '20px',
           transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -212,49 +224,31 @@ export default function AdminNavbar() {
                 style={{
                   padding: '16px',
                   borderRadius: '8px',
-                  color: isActive(link.href) ? '#fff' : '#aaa',
-                  background: isActive(link.href) ? 'rgba(102, 126, 234, 0.2)' : 'transparent',
+                  color: isActive(link.href) ? colors.text : colors.textSecondary,
+                  background: isActive(link.href) ? `${accentColor}20` : 'transparent',
                   textDecoration: 'none',
                   fontSize: '16px',
                   fontWeight: isActive(link.href) ? '600' : '400',
-                  border: isActive(link.href) ? '1px solid rgba(102, 126, 234, 0.3)' : '1px solid transparent',
+                  border: isActive(link.href) ? `1px solid ${accentColorMuted}` : '1px solid transparent',
                 }}
               >
                 {link.label}
               </Link>
             ))}
 
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '16px 0' }} />
+            <div style={{ height: '1px', background: colors.border, margin: '16px 0' }} />
 
             <Link
               href="/"
               style={{
                 padding: '16px',
-                color: '#888',
+                color: colors.textSecondary,
                 textDecoration: 'none',
                 fontSize: '16px',
               }}
             >
               ← Back to Site
             </Link>
-
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              style={{
-                padding: '16px',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '8px',
-                color: '#ef4444',
-                fontSize: '16px',
-                cursor: loggingOut ? 'not-allowed' : 'pointer',
-                opacity: loggingOut ? 0.5 : 1,
-                marginTop: '8px',
-              }}
-            >
-              {loggingOut ? 'Logging out...' : 'Logout'}
-            </button>
           </div>
         </div>
       )}

@@ -16,7 +16,9 @@ export async function GET() {
       accountsStatus.aurora.youtube || 
       accountsStatus.aurora.tiktok ||
       accountsStatus.mono.youtube ||
-      accountsStatus.mono.tiktok;
+      accountsStatus.mono.tiktok ||
+      accountsStatus.onyx.youtube ||
+      accountsStatus.onyx.tiktok;
 
     return NextResponse.json({
       authenticated,
@@ -33,11 +35,17 @@ export async function GET() {
           youtubeName: accountInfo.mono.youtubeName || 'Mono YouTube',
           tiktokName: accountInfo.mono.tiktokName || 'Mono TikTok',
         },
+        onyx: {
+          youtube: accountsStatus.onyx.youtube,
+          tiktok: accountsStatus.onyx.tiktok,
+          youtubeName: accountInfo.onyx.youtubeName || 'Onyx YouTube',
+          tiktokName: accountInfo.onyx.tiktokName || 'Onyx TikTok',
+        },
       },
       // Legacy format for backwards compatibility
       platforms: {
-        youtube: accountsStatus.aurora.youtube || accountsStatus.mono.youtube,
-        tiktok: accountsStatus.aurora.tiktok || accountsStatus.mono.tiktok,
+        youtube: accountsStatus.aurora.youtube || accountsStatus.mono.youtube || accountsStatus.onyx.youtube,
+        tiktok: accountsStatus.aurora.tiktok || accountsStatus.mono.tiktok || accountsStatus.onyx.tiktok,
       },
     });
   } catch (error) {
@@ -47,6 +55,7 @@ export async function GET() {
       accounts: {
         aurora: { youtube: false, tiktok: false },
         mono: { youtube: false, tiktok: false },
+        onyx: { youtube: false, tiktok: false },
       },
       platforms: { youtube: false, tiktok: false },
     });

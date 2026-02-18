@@ -3,21 +3,43 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import type { Video } from "../types";
+import type { Video, AccountId } from "../types";
 import VideoCard from "../components/VideoCard";
-import LogoutButton from "../components/LogoutButton";
 import ConnectionStatus from "../components/ConnectionStatus";
 import TikTokPublishDrawer, { TikTokPublishData } from "../components/TikTokPublishDrawer";
 import BulkScheduleButton from "../components/BulkScheduleButton";
 import AdminNavbar from "../components/AdminNavbar";
+import { useTheme } from "@/context/ThemeContext";
+
+interface AdvancedSettings {
+  allowDeletePartialTikTok: boolean; // TikTok succeeded, YouTube failed
+  allowDeletePartialYouTube: boolean; // YouTube succeeded, TikTok failed
+  allowDeleteBothFailed: boolean; // Both failed
+}
 
 export default function Dashboard() {
   const router = useRouter();
+  const { theme, colors } = useTheme();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [mounted, setMounted] = useState(false);
+  
+  // Visibility state
+  const [visibility, setVisibility] = useState<{ aurora: boolean; mono: boolean; onyx: boolean }>({
+    aurora: true,
+    mono: true,
+    onyx: true,
+  });
+  
+  // Advanced settings
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>({
+    allowDeletePartialTikTok: false,
+    allowDeletePartialYouTube: false,
+    allowDeleteBothFailed: false,
+  });
   
   // TikTok publish drawer state
   const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
@@ -25,8 +47,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     setMounted(true);
+    // Load advanced settings from localStorage
+    const savedSettings = localStorage.getItem('apollova-advanced-settings');
+    if (savedSettings) {
+      try {
+        setAdvancedSettings(JSON.parse(savedSettings));
+      } catch (e) {}
+    }
     checkAuth();
   }, []);
+
+  const saveAdvancedSettings = (settings: AdvancedSettings) => {
+    setAdvancedSettings(settings);
+    localStorage.setItem('apollova-advanced-settings', JSON.stringify(settings));
+  };
 
   const checkAuth = async () => {
     try {
@@ -62,6 +96,10 @@ export default function Dashboard() {
     }
   };
 
+  const handleVisibilityChange = (account: AccountId, visible: boolean) => {
+    setVisibility(prev => ({ ...prev, [account]: visible }));
+  };
+
   const handleSave = async (updated: Video) => {
     const res = await fetch(`/api/videos/${updated.id}`, {
       method: "PATCH",
@@ -71,6 +109,7 @@ export default function Dashboard() {
         scheduledAt: updated.scheduledAt,
         tiktok: updated.tiktok,
         youtube: updated.youtube,
+        account: updated.account,
       }),
     });
 
@@ -85,6 +124,31 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (videoId: string) => {
+    const video = videos.find(v => v.id === videoId);
+    if (!video) return;
+
+    // Check if deletion is allowed based on status and settings
+    const tiktokOk = video.tiktok.status === 'published';
+    const youtubeOk = video.youtube.status === 'published';
+    
+    if (video.status === 'partial') {
+      if (tiktokOk && !youtubeOk && !advancedSettings.allowDeletePartialTikTok) {
+        alert('Cannot delete: TikTok succeeded but YouTube failed.\n\nEnable "Allow delete when TikTok succeeded" in Advanced Settings to allow this.');
+        return;
+      }
+      if (!tiktokOk && youtubeOk && !advancedSettings.allowDeletePartialYouTube) {
+        alert('Cannot delete: YouTube succeeded but TikTok failed.\n\nEnable "Allow delete when YouTube succeeded" in Advanced Settings to allow this.');
+        return;
+      }
+    }
+    
+    if (video.status === 'failed' && !advancedSettings.allowDeleteBothFailed) {
+      alert('Cannot delete: Both uploads failed.\n\nEnable "Allow delete when both failed" in Advanced Settings to allow this.');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this video?')) return;
+
     const res = await fetch(`/api/videos/${videoId}`, {
       method: "DELETE",
     });
@@ -160,7 +224,7 @@ export default function Dashboard() {
           publishData: {
             videoId: videoId,
             title: video.tiktok.caption,
-            privacyLevel: 'PUBLIC_TO_EVERYONE', // Post-audit: publish publicly
+            privacyLevel: 'PUBLIC_TO_EVERYONE',
             disableComment: false,
             disableDuet: false,
             disableStitch: false,
@@ -180,11 +244,9 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (data.cleaned) {
-        // Both succeeded - video deleted
-        setVideos((prev) => prev.filter((v) => v.id === videoId));
+        setVideos((prev) => prev.filter((v) => v.id !== videoId));
         alert('✓ Published to both platforms!\n\n✓ YouTube: Live\n✓ TikTok: Published publicly\n\nVideo removed from server.');
       } else {
-        // Update status
         setVideos((prev) =>
           prev.map((v) =>
             v.id === videoId 
@@ -252,11 +314,19 @@ export default function Dashboard() {
     }
   };
 
+  // Filter videos by visibility
+  const filteredVideos = videos.filter(v => visibility[v.account || 'aurora']);
+
   if (authChecking) {
     return (
       <>
         <AdminNavbar />
-        <main className="dashboard" style={{ paddingTop: '80px' }}>
+        <main className="dashboard" style={{ 
+          paddingTop: '80px',
+          background: colors.background,
+          minHeight: '100vh',
+          color: colors.text
+        }}>
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <p>Checking authentication...</p>
           </div>
@@ -268,7 +338,12 @@ export default function Dashboard() {
   return (
     <>
       <AdminNavbar />
-      <main className="dashboard" style={{ paddingTop: '80px' }}>
+      <main className="dashboard" style={{ 
+        paddingTop: '80px',
+        background: colors.background,
+        minHeight: '100vh',
+        color: colors.text
+      }}>
         {/* Header with Bulk Schedule Button */}
         <div style={{ 
           display: 'flex', 
@@ -278,7 +353,7 @@ export default function Dashboard() {
           gap: '16px',
           flexWrap: 'wrap'
         }}>
-          <h1 className="title" style={{ margin: 0 }}>Your Video Dashboard</h1>
+          <h1 style={{ margin: 0, fontSize: '28px' }}>Your Video Dashboard</h1>
           <div style={{ 
             display: 'flex', 
             gap: '12px', 
@@ -289,17 +364,138 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <ConnectionStatus/>
+        {/* Advanced Settings Dropdown */}
+        <div style={{
+          marginBottom: '20px',
+          background: colors.backgroundSecondary,
+          border: `1px solid ${colors.border}`,
+          borderRadius: '12px',
+          overflow: 'hidden',
+        }}>
+          <button
+            onClick={() => setAdvancedOpen(!advancedOpen)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              background: 'transparent',
+              border: 'none',
+              color: colors.textSecondary,
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              ⚙️ Advanced Settings
+            </span>
+            <span style={{ 
+              transform: advancedOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s'
+            }}>
+              ▼
+            </span>
+          </button>
+          
+          {advancedOpen && (
+            <div style={{
+              padding: '16px',
+              borderTop: `1px solid ${colors.border}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '12px', 
+                color: colors.textSecondary,
+                marginBottom: '8px'
+              }}>
+                Control when partial or failed uploads can be deleted:
+              </p>
+              
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: colors.text,
+              }}>
+                <input
+                  type="checkbox"
+                  checked={advancedSettings.allowDeletePartialTikTok}
+                  onChange={(e) => saveAdvancedSettings({
+                    ...advancedSettings,
+                    allowDeletePartialTikTok: e.target.checked
+                  })}
+                  style={{ width: '16px', height: '16px', accentColor: colors.accent }}
+                />
+                Allow delete when TikTok succeeded but YouTube failed
+              </label>
+              
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: colors.text,
+              }}>
+                <input
+                  type="checkbox"
+                  checked={advancedSettings.allowDeletePartialYouTube}
+                  onChange={(e) => saveAdvancedSettings({
+                    ...advancedSettings,
+                    allowDeletePartialYouTube: e.target.checked
+                  })}
+                  style={{ width: '16px', height: '16px', accentColor: colors.accent }}
+                />
+                Allow delete when YouTube succeeded but TikTok failed
+              </label>
+              
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: colors.text,
+              }}>
+                <input
+                  type="checkbox"
+                  checked={advancedSettings.allowDeleteBothFailed}
+                  onChange={(e) => saveAdvancedSettings({
+                    ...advancedSettings,
+                    allowDeleteBothFailed: e.target.checked
+                  })}
+                  style={{ width: '16px', height: '16px', accentColor: colors.accent }}
+                />
+                Allow delete when both uploads failed
+              </label>
+            </div>
+          )}
+        </div>
 
-        {loading && <p>Loading videos...</p>}
-        {error && <p className="error">Error: {error}</p>}
+        <ConnectionStatus 
+          visibility={visibility}
+          onVisibilityChange={handleVisibilityChange}
+        />
 
-        {!loading && videos.length === 0 && (
-          <p>No videos yet. Upload or send some from your pipeline.</p>
+        {loading && <p style={{ color: colors.textSecondary }}>Loading videos...</p>}
+        {error && <p style={{ color: '#ff6b81' }}>Error: {error}</p>}
+
+        {!loading && filteredVideos.length === 0 && (
+          <p style={{ color: colors.textSecondary }}>
+            {videos.length === 0 
+              ? 'No videos yet. Upload or send some from your pipeline.'
+              : 'No videos visible. Adjust visibility filters above.'}
+          </p>
         )}
 
         <div className="grid">
-          {videos.map((video) => (
+          {filteredVideos.map((video) => (
             <VideoCard
               key={video.id}
               video={video}

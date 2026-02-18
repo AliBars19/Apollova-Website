@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate account
-    if (account !== 'aurora' && account !== 'mono') {
+    if (account !== 'aurora' && account !== 'mono' && account !== 'onyx') {
       return NextResponse.json(
-        { error: 'Invalid account. Must be "aurora" or "mono"' },
+        { error: 'Invalid account. Must be "aurora", "mono", or "onyx"' },
         { status: 400 }
       );
     }

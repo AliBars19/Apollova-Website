@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
   const account = searchParams.get('account') || 'aurora';
   
   // Validate account
-  if (account !== 'aurora' && account !== 'mono') {
+  if (account !== 'aurora' && account !== 'mono' && account !== 'onyx') {
     return NextResponse.json(
-      { error: 'Invalid account. Must be "aurora" or "mono"' },
+      { error: 'Invalid account. Must be "aurora", "mono", or "onyx"' },
       { status: 400 }
     );
   }
