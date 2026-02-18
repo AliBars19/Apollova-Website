@@ -196,7 +196,7 @@ export default function Template3Page() {
           padding: 'clamp(80px, 12vw, 120px) 20px',
           background: theme === 'light' 
             ? colors.text 
-            : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+            : colors.accent,
           textAlign: 'center',
         }}>
           <div style={{

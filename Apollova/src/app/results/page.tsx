@@ -110,7 +110,7 @@ export default function ResultsPage() {
                 <div style={{
                   fontSize: isMobile ? '28px' : 'clamp(32px, 5vw, 48px)',
                   fontWeight: '300',
-                  background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+                  background: colors.accent,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   marginBottom: '6px',
@@ -206,7 +206,7 @@ export default function ResultsPage() {
                 <div style={{
                   fontSize: 'clamp(24px, 4vw, 32px)',
                   fontWeight: '400',
-                  background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+                  background: colors.accent,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   marginBottom: '20px',
@@ -357,7 +357,7 @@ export default function ResultsPage() {
           padding: 'clamp(80px, 12vw, 120px) 20px',
           background: theme === 'light' 
             ? colors.text 
-            : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+            : colors.accent,
           textAlign: 'center',
         }}>
           <h2 style={{

@@ -228,8 +228,8 @@ export default function PublicNavbar() {
                 href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova"
                 style={{
                   padding: '10px 24px',
-                  background: theme === 'light' ? colors.text : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
-                  color: theme === 'light' ? colors.background : '#fff',
+                  background: colors.accent,
+                  color: '#fff',
                   textDecoration: 'none',
                   borderRadius: '8px',
                   fontSize: '14px',
@@ -358,11 +358,11 @@ export default function PublicNavbar() {
 
             {/* Mobile CTA */}
             <a
-              href="mailto:contact@apollova.com?subject=Inquiry about Apollova"
+              href="mailto:contact@apollova.co.uk?subject=Inquiry about Apollova"
               style={{
                 marginTop: '24px',
                 padding: '16px 24px',
-                background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+                background: colors.accent,
                 color: '#fff',
                 textDecoration: 'none',
                 borderRadius: '12px',

@@ -106,7 +106,7 @@ export default function Template2Page() {
               style={{
                 display: 'inline-block',
                 padding: '14px 32px',
-                background: theme === 'light' ? colors.text : `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentSecondary} 100%)`,
+                background: colors.accent,
                 color: theme === 'light' ? colors.background : '#fff',
                 textDecoration: 'none',
                 fontSize: '14px',
