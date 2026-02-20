@@ -6,14 +6,13 @@ import type { Video, AccountId } from '@/app/types';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'videos.json');
 
-// Rate limiting: max videos to publish per scheduler run
-const MAX_VIDEOS_PER_RUN = 1;
+// Publishing window (24-hour format, UTC)
+// 11:00 to 22:00 UTC = 11am to 10pm
+const PUBLISH_START_HOUR = 11;
+const PUBLISH_END_HOUR = 22;
 
-// Delay between publishing videos (in milliseconds)
-const DELAY_BETWEEN_PUBLISHES = 60000; // 1 minute
-
-// Daily limit per account
-const DAILY_LIMIT_PER_ACCOUNT = 12;
+// Max videos per account per hour (to prevent burst publishing)
+const MAX_PER_ACCOUNT_PER_HOUR = 1;
 
 // Get the base URL for API calls
 function getBaseUrl(): string {
@@ -24,50 +23,65 @@ function getBaseUrl(): string {
 }
 
 /**
- * Get count of videos published today for a specific account
+ * Check if current time is within the publishing window
  */
-function getPublishedTodayCount(videos: Video[], accountId: AccountId): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+function isWithinPublishingWindow(): boolean {
+  const now = new Date();
+  const currentHour = now.getUTCHours();
+  
+  // Publishing allowed from 11:00 to 21:59 UTC (last publish at 22:00 would be 10pm)
+  return currentHour >= PUBLISH_START_HOUR && currentHour < PUBLISH_END_HOUR;
+}
+
+/**
+ * Get videos published in the current hour for a specific account
+ */
+function getPublishedThisHourCount(videos: Video[], accountId: AccountId): number {
+  const now = new Date();
+  const hourStart = new Date(now);
+  hourStart.setMinutes(0, 0, 0);
+  
+  const hourEnd = new Date(hourStart);
+  hourEnd.setHours(hourEnd.getHours() + 1);
   
   return videos.filter((video) => {
     if (video.account !== accountId) return false;
     if (video.status !== 'published' && video.status !== 'partial') return false;
     
-    // Check if published today (look at tiktok or youtube publishedAt)
     const publishedAt = video.tiktok?.publishedAt || video.youtube?.publishedAt;
     if (!publishedAt) return false;
     
     const publishDate = new Date(publishedAt);
-    publishDate.setHours(0, 0, 0, 0);
-    
-    return publishDate.getTime() === today.getTime();
+    return publishDate >= hourStart && publishDate < hourEnd;
   }).length;
 }
 
 /**
- * Check if we can publish more videos for a given account today
+ * Check if we can publish for this account this hour
  */
-function canPublishForAccount(videos: Video[], accountId: AccountId): boolean {
-  const publishedToday = getPublishedTodayCount(videos, accountId);
-  const canPublish = publishedToday < DAILY_LIMIT_PER_ACCOUNT;
-  
-  if (!canPublish) {
-    console.log(`⚠️ Account ${accountId} has reached daily limit (${publishedToday}/${DAILY_LIMIT_PER_ACCOUNT})`);
-  }
-  
-  return canPublish;
+function canPublishThisHour(videos: Video[], accountId: AccountId): boolean {
+  const publishedThisHour = getPublishedThisHourCount(videos, accountId);
+  return publishedThisHour < MAX_PER_ACCOUNT_PER_HOUR;
 }
 
 /**
- * Checks for videos that need to be published based on their scheduledAt time
- * RATE LIMITED: Only publishes 1 video per run to prevent mass publishing
+ * Checks for videos that need to be published
+ * - Only publishes during the 11am-10pm window
+ * - Max 1 video per account per hour
+ * - Processes oldest scheduled videos first
  */
 async function checkAndPublishScheduledVideos() {
   const now = new Date();
   const timestamp = now.toISOString();
   
   console.log(`[${timestamp}] Checking for scheduled videos...`);
+
+  // Check if we're in the publishing window
+  if (!isWithinPublishingWindow()) {
+    const currentHour = now.getUTCHours();
+    console.log(`Outside publishing window (current: ${currentHour}:00 UTC, window: ${PUBLISH_START_HOUR}:00-${PUBLISH_END_HOUR}:00 UTC)`);
+    return;
+  }
 
   if (!fs.existsSync(DATA_FILE)) {
     console.log('No videos.json file found');
@@ -77,18 +91,17 @@ async function checkAndPublishScheduledVideos() {
   // Load all videos
   const videos: Video[] = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
 
-  // Find videos scheduled for now or earlier, sorted by scheduledAt (oldest first)
+  // Find videos that are scheduled (status = 'scheduled') and due (scheduledAt <= now)
+  // Sort by scheduledAt (oldest first) to process backlog fairly
   const videosToPublish = videos
     .filter((video) => {
       if (video.status !== 'scheduled' || !video.scheduledAt) {
         return false;
       }
-
       const scheduledTime = new Date(video.scheduledAt);
       return scheduledTime <= now;
     })
     .sort((a, b) => {
-      // Sort by scheduled time (oldest first)
       const timeA = new Date(a.scheduledAt!).getTime();
       const timeB = new Date(b.scheduledAt!).getTime();
       return timeA - timeB;
@@ -99,41 +112,39 @@ async function checkAndPublishScheduledVideos() {
     return;
   }
 
-  console.log(`Found ${videosToPublish.length} videos ready to publish`);
+  console.log(`Found ${videosToPublish.length} video(s) ready to publish`);
 
-  // Group by account to check daily limits
-  const accountCounts: Record<string, number> = {};
+  // Group by account
+  const byAccount: Record<string, Video[]> = {};
   for (const video of videosToPublish) {
     const acc = video.account || 'aurora';
-    accountCounts[acc] = (accountCounts[acc] || 0) + 1;
+    if (!byAccount[acc]) byAccount[acc] = [];
+    byAccount[acc].push(video);
   }
-  
-  console.log('Videos per account:', accountCounts);
+
+  console.log('Queue by account:', Object.fromEntries(
+    Object.entries(byAccount).map(([k, v]) => [k, v.length])
+  ));
 
   const baseUrl = getBaseUrl();
-  let publishedCount = 0;
+  const publishedAccounts: Set<string> = new Set();
 
-  // Publish only MAX_VIDEOS_PER_RUN video(s) per scheduler run
-  for (const video of videosToPublish) {
-    if (publishedCount >= MAX_VIDEOS_PER_RUN) {
-      console.log(`Rate limit reached (${MAX_VIDEOS_PER_RUN}/run). Remaining videos will be published in next check.`);
-      break;
-    }
-
-    const accountId = (video.account || 'aurora') as AccountId;
-    
-    // Check daily limit for this account
+  // Try to publish ONE video per account (respecting hourly limit)
+  for (const [accountId, accountVideos] of Object.entries(byAccount)) {
     // Re-read videos to get latest state
     const currentVideos: Video[] = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    if (!canPublishForAccount(currentVideos, accountId)) {
-      console.log(`Skipping ${video.filename} - account ${accountId} at daily limit`);
+    
+    if (!canPublishThisHour(currentVideos, accountId as AccountId)) {
+      console.log(`⏸️  ${accountId}: Already published this hour, skipping`);
       continue;
     }
 
+    // Get the oldest video for this account
+    const video = accountVideos[0];
+
     try {
-      console.log(`Publishing: ${video.filename} to account: ${accountId}`);
+      console.log(`📤 Publishing: ${video.filename} (account: ${accountId})`);
       
-      // Call the publish API endpoint with "both" platform
       const response = await fetch(`${baseUrl}/api/videos/${video.id}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,53 +168,52 @@ async function checkAndPublishScheduledVideos() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✓ Successfully published: ${video.filename}`);
-        publishedCount++;
+        publishedAccounts.add(accountId);
+        
+        console.log(`✓ Published: ${video.filename}`);
         
         if (data.cleaned) {
-          console.log('✓ Video auto-cleaned (both platforms successful)');
-        }
-        
-        // Log results
-        if (data.results?.tiktok?.success) {
-          console.log(`  ✓ TikTok: ${data.results.tiktok.videoId || 'Published'}`);
-        } else {
-          console.log(`  ✗ TikTok: ${data.results?.tiktok?.error || 'Failed'}`);
+          console.log('  ✓ Auto-cleaned (both platforms successful)');
         }
         
         if (data.results?.youtube?.success) {
-          console.log(`  ✓ YouTube: ${data.results.youtube.videoId || 'Published'}`);
+          console.log(`  ✓ YouTube: ${data.results.youtube.videoId || 'OK'}`);
         } else {
           console.log(`  ✗ YouTube: ${data.results?.youtube?.error || 'Failed'}`);
         }
+        
+        if (data.results?.tiktok?.success) {
+          console.log(`  ✓ TikTok: ${data.results.tiktok.videoId || 'OK'}`);
+        } else {
+          console.log(`  ✗ TikTok: ${data.results?.tiktok?.error || 'Failed'}`);
+        }
       } else {
         const errorText = await response.text();
-        console.error(`✗ Failed to publish: ${video.filename}`, errorText);
-      }
-
-      // Delay before next publish (even if we hit the rate limit, this ensures spacing)
-      if (publishedCount < MAX_VIDEOS_PER_RUN && videosToPublish.indexOf(video) < videosToPublish.length - 1) {
-        console.log(`Waiting ${DELAY_BETWEEN_PUBLISHES / 1000}s before next publish...`);
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_PUBLISHES));
+        console.error(`✗ Failed: ${video.filename}`, errorText);
       }
     } catch (error) {
-      console.error(`Error publishing ${video.filename}:`, error);
+      console.error(`✗ Error publishing ${video.filename}:`, error);
     }
   }
 
-  if (publishedCount > 0) {
-    const remaining = videosToPublish.length - publishedCount;
-    console.log(`Published ${publishedCount} video(s) this run. ${remaining} video(s) remaining in queue.`);
+  // Summary
+  const remainingCount = videosToPublish.length - publishedAccounts.size;
+  if (publishedAccounts.size > 0) {
+    console.log(`Published to ${publishedAccounts.size} account(s): ${[...publishedAccounts].join(', ')}`);
+  }
+  if (remainingCount > 0) {
+    console.log(`${remainingCount} video(s) remaining in queue for next hour`);
   }
 }
 
 /**
- * Starts the scheduler that checks every 5 minutes for videos to publish
- * With rate limiting: publishes max 1 video per 5-minute check
- * This means max 12 videos/hour if all past-due (which aligns with TikTok limits)
+ * Starts the scheduler
+ * - Checks every 5 minutes for videos to publish
+ * - Only publishes during 11am-10pm UTC window
+ * - Max 1 video per account per hour
  */
 export function startScheduler() {
-  // Check every 5 minutes (at :00, :05, :10, :15, :20, etc.)
+  // Check every 5 minutes
   cron.schedule('*/5 * * * *', async () => {
     await checkAndPublishScheduledVideos();
   });
@@ -211,12 +221,11 @@ export function startScheduler() {
   const baseUrl = getBaseUrl();
   console.log('========================================');
   console.log('✓ Scheduler started!');
-  console.log(`✓ Using base URL: ${baseUrl}`);
-  console.log('✓ Checking for scheduled videos every 5 minutes');
-  console.log(`✓ Rate limit: ${MAX_VIDEOS_PER_RUN} video(s) per check`);
-  console.log(`✓ Daily limit: ${DAILY_LIMIT_PER_ACCOUNT} videos per account`);
-  console.log('✓ Will publish to BOTH platforms (YouTube + TikTok)');
-  console.log('✓ Uses account from video metadata (aurora/mono/onyx)');
+  console.log(`✓ Base URL: ${baseUrl}`);
+  console.log('✓ Checking every 5 minutes');
+  console.log(`✓ Publishing window: ${PUBLISH_START_HOUR}:00-${PUBLISH_END_HOUR}:00 UTC`);
+  console.log(`✓ Rate limit: ${MAX_PER_ACCOUNT_PER_HOUR} video per account per hour`);
+  console.log('✓ Accounts: aurora / mono / onyx');
   console.log('========================================');
 }
 
