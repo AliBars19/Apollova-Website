@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   // Redirect URI (must match what's in Google Cloud Console)
   const redirectUri = process.env.NODE_ENV === 'production'
-    ? 'https://macbookvisuals.com/api/auth/callback/youtube'
+    ? 'https://apollova.com/api/auth/callback/youtube'
     : 'http://localhost:3000/api/auth/callback/youtube';
 
   // Build Google OAuth URL

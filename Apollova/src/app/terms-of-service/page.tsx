@@ -46,7 +46,7 @@ export default function TermsPage() {
 
         <h2 className="text-2xl font-semibold mt-8">4. No Warranty</h2>
         <p>
-          MacBookVisuals is provided “as is” without warranties. We do not guarantee uninterrupted or
+          Apollova is provided "as is" without warranties. We do not guarantee uninterrupted or
           error-free service.
         </p>
 

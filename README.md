@@ -1,4 +1,4 @@
-# Macbook Visuals - Automated Video Publisher
+# Apollova - Automated Video Publisher
 
 A full-stack Next.js application that automates the publishing of music videos to TikTok and YouTube with intelligent caption generation, scheduled posting, and 24/7 automation support.
 
@@ -6,7 +6,7 @@ A full-stack Next.js application that automates the publishing of music videos t
 
 ## 🎯 Overview
 
-**Macbook Visuals** is a sophisticated automated video publishing system designed to streamline content distribution across social media platforms. The application intelligently parses video filenames, generates platform-specific captions with hashtags, and schedules posts throughout the day—all without manual intervention.
+**Macbook Apollova** is a sophisticated automated video publishing system designed to streamline content distribution across social media platforms. The application intelligently parses video filenames, generates platform-specific captions with hashtags, and schedules posts throughout the day—all without manual intervention.
 
 ### Core Features
 
@@ -51,13 +51,13 @@ A full-stack Next.js application that automates the publishing of music videos t
 ## 📁 Project Structure
 
 ```
-Macbook-Visuals-Website/
+Macbook-Apollova-Website/
 ├── README.md                              # Root README
-├── Macbook-Visuals-Package/
+├── Macbook-Apollova-Package/
 │   ├── 3D Apple Music.aep                # After Effects project file
 │   └── Activation.jsx                    # Activation/licensing script
 │
-└── macbookvisuals/                        # Main Next.js Application
+└── apollova/                              # Main Next.js Application
     ├── package.json                       # Dependencies and scripts
     ├── next.config.ts                     # Next.js configuration
     ├── tsconfig.json                      # TypeScript configuration
@@ -186,8 +186,8 @@ Macbook-Visuals-Website/
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/Macbook-Visuals-Website.git
-cd Macbook-Visuals-Website/macbookvisuals
+git clone https://github.com/yourusername/Macbook-Apollova-Website.git
+cd Macbook-Apollova-Website/apollova
 ```
 
 ### Step 2: Install Dependencies
@@ -200,7 +200,7 @@ yarn install
 
 ### Step 3: Configure Environment Variables
 
-Create a `.env.local` file in the `macbookvisuals` directory with the following:
+Create a `.env.local` file in the `apollova` directory with the following:
 
 ```env
 # YouTube API
@@ -409,26 +409,26 @@ npm start
 ssh pi@raspberry-pi-ip
 
 # Clone repository
-git clone https://github.com/yourusername/Macbook-Visuals-Website.git
-cd Macbook-Visuals-Website/macbookvisuals
+git clone https://github.com/yourusername/Macbook-Apollova-Website.git
+cd Macbook-Apollova-Website/apollova
 
 # Install dependencies
 npm install
 
 # Create systemd service for 24/7 running
-sudo nano /etc/systemd/system/macbook-visuals.service
+sudo nano /etc/systemd/system/macbook-apollova.service
 ```
 
 Add the following to the service file:
 ```ini
 [Unit]
-Description=Macbook Visuals Video Scheduler
+Description=Macbook Apollova Video Scheduler
 After=network.target
 
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/Macbook-Visuals-Website/macbookvisuals
+WorkingDirectory=/home/pi/Macbook-Apollova-Website/apollova
 ExecStart=/usr/bin/node /usr/bin/npm start
 Restart=always
 RestartSec=10
@@ -440,8 +440,8 @@ WantedBy=multi-user.target
 Enable and start the service:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable macbook-visuals
-sudo systemctl start macbook-visuals
+sudo systemctl enable macbook-apollova
+sudo systemctl start macbook-apollova
 ```
 
 ---
@@ -595,9 +595,9 @@ For issues, questions, or feature requests:
 
 ## 🎬 Additional Resources
 
-### Macbook-Visuals-Package
+### Macbook-Apollova-Package
 
-The `Macbook-Visuals-Package` folder contains:
+The `Macbook-Apollova-Package` folder contains:
 - **3D Apple Music.aep** - After Effects project for video templates
 - **Activation.jsx** - Licensing/activation script for the project
 
@@ -623,7 +623,7 @@ Song Title - Artist Name.mp4
 ```bash
 # 1. Clone and setup
 git clone <repo-url>
-cd macbookvisuals
+cd apollova
 npm install
 
 # 2. Configure
@@ -638,4 +638,4 @@ npm run dev
 
 ---
 
-**Macbook Visuals** - Automate your music video publishing today! 🎵📱
+**Macbook Apollova** - Automate your music video publishing today! 🎵📱

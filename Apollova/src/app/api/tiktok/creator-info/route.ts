@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getValidTikTokToken, AccountId } from '@/utils/tokenManager';
 
 /**
- * GET /api/tiktok/creator-info?account=aurora|nova
+ * GET /api/tiktok/creator-info?account=aurora|mono
  * Fetches TikTok creator information required for Direct Post compliance
  */
 export async function GET(request: NextRequest) {

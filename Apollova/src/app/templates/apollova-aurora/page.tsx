@@ -64,7 +64,7 @@ export default function Template1Page() {
             marginBottom: '24px',
             letterSpacing: '-1px',
           }}>
-            Visuals Aurora
+            Apollova Aurora
           </h1>
           <p style={{
             color: colors.textSecondary,
@@ -155,7 +155,7 @@ export default function Template1Page() {
                 color: colors.text,
                 marginBottom: '20px',
               }}>
-                Interested in Visuals Aurora?
+                Interested in Apollova Aurora?
               </h2>
               <p style={{
                 color: colors.textSecondary,

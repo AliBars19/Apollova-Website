@@ -88,7 +88,7 @@ export default function Template3Page() {
               marginBottom: '20px',
               letterSpacing: '-1px',
             }}>
-              Visuals Onyx
+              Apollova Onyx
             </h1>
             <p style={{
               color: colors.textSecondary,

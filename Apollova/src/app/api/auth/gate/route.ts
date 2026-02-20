@@ -1,7 +1,7 @@
 // src/app/api/auth/gate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-const SITE_PASSWORD = process.env.SITE_PASSWORD || 'macbookvisuals2026'; // Change this!
+const SITE_PASSWORD = process.env.SITE_PASSWORD || 'apollova2026'; // Change this!
 
 export async function POST(request: NextRequest) {
   try {

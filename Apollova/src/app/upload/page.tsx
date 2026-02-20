@@ -141,7 +141,7 @@ export default function UploadPage() {
                 <span style={{ fontSize: '24px' }}>
                   {accountColors[acc].emoji}
                 </span>
-                <span>Visuals {acc.charAt(0).toUpperCase() + acc.slice(1)}</span>
+                <span>Apollova {acc.charAt(0).toUpperCase() + acc.slice(1)}</span>
                 <span style={{ fontSize: '11px', opacity: 0.7 }}>
                   12 videos/day
                 </span>
