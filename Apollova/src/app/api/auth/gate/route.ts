@@ -1,7 +1,11 @@
 // src/app/api/auth/gate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-const SITE_PASSWORD = process.env.SITE_PASSWORD || 'apollova2026'; // Change this!
+const SITE_PASSWORD = process.env.SITE_PASSWORD;
+
+if (!SITE_PASSWORD) {
+  throw new Error('SITE_PASSWORD environment variable is required. Set it in .env.local');
+}
 
 export async function POST(request: NextRequest) {
   try {
