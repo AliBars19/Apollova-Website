@@ -1,5 +1,5 @@
 "use client";
-
+// Terms of Service Page
 import PublicNavbar from "../components/PublicNavbar";
 import PublicFooter from "../components/PublicFooter";
 import { useTheme } from "@/context/ThemeContext";
