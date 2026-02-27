@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd ~/Macbook-Visuals-Website/Apollova
+            cd ~/Apollova-Website/Apollova
             git pull origin main
             npm install --production
             npm run build
