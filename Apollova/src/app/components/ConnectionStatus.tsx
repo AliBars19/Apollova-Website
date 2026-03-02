@@ -76,7 +76,7 @@ export default function ConnectionStatus({ visibility, onVisibilityChange }: Con
   if (loading) return null;
 
   const accounts: { id: AccountId; label: string; color: string; emoji: string }[] = [
-    { id: 'aurora', label: 'Aurora', color: '#8B5CF6', emoji: '🌌' },
+    { id: 'aurora', label: 'Aurora', color: '#84C3AA', emoji: '🌌' },
     { id: 'mono', label: 'Mono', color: '#F59E0B', emoji: '⭐' },
     { id: 'onyx', label: 'Onyx', color: '#1E90FF', emoji: '💎' },
   ];

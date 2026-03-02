@@ -49,7 +49,7 @@ export default function VideoCard({
   };
 
   const accountColors: Record<AccountId, { bg: string; text: string; emoji: string }> = {
-    aurora: { bg: '#8B5CF6', text: '#fff', emoji: '🌌' },
+    aurora: { bg: '#84C3AA', text: '#1a1a1a', emoji: '🌌' },
     mono: { bg: '#F59E0B', text: '#000', emoji: '⭐' },
     onyx: { bg: '#1E90FF', text: '#fff', emoji: '💎' },
   };

@@ -60,10 +60,10 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
         onClick={loadScheduleInfo}
         style={{
           padding: '12px 24px',
-          background: '#2D004B',
+          background: '#84C3AA',
           border: 'none',
           borderRadius: '12px',
-          color: 'white',
+          color: '#1a1a1a',
           fontSize: '14px',
           fontWeight: 'bold',
           cursor: 'pointer',
@@ -104,7 +104,7 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
               padding: '32px',
               maxWidth: '500px',
               width: '90%',
-              border: '1px solid rgba(45, 0, 75, 0.3)',
+              border: '1px solid rgba(132, 195, 170, 0.3)',
             }}
           >
             <h2 style={{ margin: '0 0 24px', fontSize: '24px', color: 'white' }}>
@@ -114,7 +114,7 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
             <div style={{ marginBottom: '24px' }}>
               <div style={{
                 padding: '16px',
-                background: 'rgba(45, 0, 75, 0.1)',
+                background: 'rgba(132, 195, 170, 0.1)',
                 borderRadius: '12px',
                 marginBottom: '16px',
               }}>
@@ -200,10 +200,10 @@ export default function BulkScheduleButton({ onScheduleComplete }: BulkScheduleB
                     padding: '12px',
                     background: loading
                       ? '#555'
-                      : '#2D004B',
+                      : '#84C3AA',
                     border: 'none',
                     borderRadius: '8px',
-                    color: 'white',
+                    color: '#1a1a1a',
                     cursor: loading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
                     fontWeight: 'bold',

@@ -59,7 +59,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { platform, publishData } = body;
+    const { platform, publishData, autoDeleteSettings } = body;
 
     console.log('========================================');
     console.log(`PUBLISH requested for video ID: ${id}`);
@@ -166,20 +166,41 @@ export async function POST(
     // Save updated metadata
     await writeVideos(videos);
 
-    // Auto-cleanup if both platforms succeeded
+    // Auto-cleanup logic
     let cleaned = false;
-    if (platform === 'both' && tiktokSuccess && youtubeSuccess) {
-      console.log('🗑️  Both platforms successful - cleaning up...');
-      try {
-        await fs.unlink(videoPath);
-        console.log('✓ Video file deleted');
+    if (platform === 'both') {
+      let shouldClean = false;
 
-        const updatedVideos = videos.filter((v) => v.id !== id);
-        await writeVideos(updatedVideos);
-        console.log('✓ Metadata removed');
-        cleaned = true;
-      } catch (error) {
-        console.error('✗ Cleanup failed:', error);
+      if (tiktokSuccess && youtubeSuccess) {
+        // Both succeeded — always clean up
+        shouldClean = true;
+        console.log('🗑️  Both platforms successful - cleaning up...');
+      } else if (autoDeleteSettings) {
+        // Check partial/failure auto-delete settings from dashboard
+        if (tiktokSuccess && !youtubeSuccess && autoDeleteSettings.allowDeletePartialTikTok) {
+          shouldClean = true;
+          console.log('🗑️  TikTok succeeded, YouTube failed - auto-deleting (setting enabled)...');
+        } else if (!tiktokSuccess && youtubeSuccess && autoDeleteSettings.allowDeletePartialYouTube) {
+          shouldClean = true;
+          console.log('🗑️  YouTube succeeded, TikTok failed - auto-deleting (setting enabled)...');
+        } else if (!tiktokSuccess && !youtubeSuccess && autoDeleteSettings.allowDeleteBothFailed) {
+          shouldClean = true;
+          console.log('🗑️  Both platforms failed - auto-deleting (setting enabled)...');
+        }
+      }
+
+      if (shouldClean) {
+        try {
+          await fs.unlink(videoPath);
+          console.log('✓ Video file deleted');
+
+          const updatedVideos = videos.filter((v) => v.id !== id);
+          await writeVideos(updatedVideos);
+          console.log('✓ Metadata removed');
+          cleaned = true;
+        } catch (error) {
+          console.error('✗ Cleanup failed:', error);
+        }
       }
     }
 

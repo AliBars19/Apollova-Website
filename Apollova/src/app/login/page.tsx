@@ -118,7 +118,7 @@ export default function LoginPage() {
         .login-header h1 {
           font-size: 32px;
           margin-bottom: 8px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #84C3AA 0%, #5A9E84 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;

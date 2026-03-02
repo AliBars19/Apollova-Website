@@ -226,7 +226,7 @@ body {
 .field input:focus,
 .field textarea:focus {
   outline: none;
-  border-color: #2D004B;
+  border-color: #84C3AA;
 }
 
 /* Buttons */
@@ -241,13 +241,13 @@ body {
 }
 
 .btn.primary {
-  background: #2D004B;
-  color: white;
-  box-shadow: 0 8px 24px rgba(45, 0, 75, 0.5);
+  background: #84C3AA;
+  color: #1a1a1a;
+  box-shadow: 0 8px 24px rgba(132, 195, 170, 0.5);
 }
 
 .btn.primary:hover {
-  background: #3D0066;
+  background: #6DAD94;
 }
 
 .btn.primary:disabled {
@@ -538,7 +538,7 @@ html {
 
 /* Selection color */
 ::selection {
-  background: rgba(45, 0, 75, 0.3);
+  background: rgba(132, 195, 170, 0.3);
 }
 
 /* Scrollbar styling */
@@ -551,12 +551,12 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(45, 0, 75, 0.3);
+  background: rgba(132, 195, 170, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(45, 0, 75, 0.5);
+  background: rgba(132, 195, 170, 0.5);
 }
 
 /* Animation for scroll indicator */

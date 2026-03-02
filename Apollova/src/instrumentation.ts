@@ -7,7 +7,13 @@ let started = false;
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs' && !started) {
     started = true;
-    const { startScheduler } = await import('@/utils/scheduler');
-    startScheduler();
+    try {
+      const { startScheduler } = await import('@/utils/scheduler');
+      startScheduler();
+      console.log('[instrumentation] Scheduler auto-started on server boot');
+    } catch (error) {
+      started = false;
+      console.error('[instrumentation] Failed to start scheduler:', error);
+    }
   }
 }

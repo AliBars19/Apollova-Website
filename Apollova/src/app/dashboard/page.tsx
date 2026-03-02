@@ -234,6 +234,7 @@ export default function Dashboard() {
               brandedContent: false,
             },
           },
+          autoDeleteSettings: advancedSettings,
         }),
       });
 
@@ -243,26 +244,33 @@ export default function Dashboard() {
 
       const data = await res.json();
 
+      const tiktokOk = data.results?.tiktok?.success;
+      const youtubeOk = data.results?.youtube?.success;
+      const tiktokStatus = tiktokOk ? '✓ TikTok: Published' : '✗ TikTok: Failed';
+      const youtubeStatus = youtubeOk ? '✓ YouTube: Published' : '✗ YouTube: Failed';
+
       if (data.cleaned) {
         setVideos((prev) => prev.filter((v) => v.id !== videoId));
-        alert('✓ Published to both platforms!\n\n✓ YouTube: Live\n✓ TikTok: Published publicly\n\nVideo removed from server.');
+
+        if (tiktokOk && youtubeOk) {
+          alert('✓ Published to both platforms!\n\n✓ YouTube: Live\n✓ TikTok: Published publicly\n\nVideo removed from server.');
+        } else {
+          alert(`Publishing complete!\n\n${youtubeStatus}\n${tiktokStatus}\n\nVideo auto-deleted per your Advanced Settings.`);
+        }
       } else {
         setVideos((prev) =>
           prev.map((v) =>
-            v.id === videoId 
-              ? { 
-                  ...v, 
+            v.id === videoId
+              ? {
+                  ...v,
                   status: data.video.status,
                   tiktok: data.video.tiktok,
                   youtube: data.video.youtube
-                } 
+                }
               : v
           )
         );
 
-        const tiktokStatus = data.results?.tiktok?.success ? '✓ TikTok: Published' : '✗ TikTok: Failed';
-        const youtubeStatus = data.results?.youtube?.success ? '✓ YouTube: Published' : '✗ YouTube: Failed';
-        
         alert(`Publishing complete!\n\n${youtubeStatus}\n${tiktokStatus}`);
       }
 

@@ -22,10 +22,10 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Lewis Hamilton 2020 Mercedes Purple
-const ACCENT_PURPLE = '#2D004B';
-const ACCENT_PURPLE_HOVER = '#3D0066';
-const ACCENT_PURPLE_MUTED = 'rgba(45, 0, 75, 0.2)';
+// Eau de Nil (Fortnum & Mason)
+const ACCENT = '#84C3AA';
+const ACCENT_HOVER = '#6DAD94';
+const ACCENT_MUTED = 'rgba(132, 195, 170, 0.2)';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark');
@@ -54,9 +54,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         text: '#1a1a1a',
         textSecondary: '#666666',
         border: '#e5e5e5',
-        accent: ACCENT_PURPLE,
-        accentHover: ACCENT_PURPLE_HOVER,
-        accentMuted: ACCENT_PURPLE_MUTED,
+        accent: ACCENT,
+        accentHover: ACCENT_HOVER,
+        accentMuted: ACCENT_MUTED,
       }
     : {
         background: '#050509',
@@ -65,9 +65,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         text: '#ffffff',
         textSecondary: '#888888',
         border: 'rgba(255, 255, 255, 0.1)',
-        accent: ACCENT_PURPLE,
-        accentHover: ACCENT_PURPLE_HOVER,
-        accentMuted: ACCENT_PURPLE_MUTED,
+        accent: ACCENT,
+        accentHover: ACCENT_HOVER,
+        accentMuted: ACCENT_MUTED,
       };
 
   // Prevent flash of wrong theme

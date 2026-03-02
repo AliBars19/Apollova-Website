@@ -30,9 +30,9 @@ export default function AdminNavbar() {
 
   const isActive = (href: string) => pathname.startsWith(href);
 
-  // Lewis Hamilton 2020 purple
-  const accentColor = '#2D004B';
-  const accentColorMuted = 'rgba(45, 0, 75, 0.3)';
+  // Eau de Nil (Fortnum & Mason)
+  const accentColor = '#84C3AA';
+  const accentColorMuted = 'rgba(132, 195, 170, 0.3)';
 
   return (
     <>

@@ -183,7 +183,7 @@ export default function LicensesPage() {
             <div>
               <h1 style={{
                 fontSize: "32px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: "linear-gradient(135deg, #84C3AA 0%, #5A9E84 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 marginBottom: "8px",
@@ -199,14 +199,14 @@ export default function LicensesPage() {
               onClick={() => setShowCreateModal(true)}
               style={{
                 padding: "14px 28px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: "linear-gradient(135deg, #84C3AA 0%, #5A9E84 100%)",
                 border: "none",
                 borderRadius: "10px",
-                color: "white",
+                color: "#1a1a1a",
                 fontSize: "15px",
                 fontWeight: "bold",
                 cursor: "pointer",
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                boxShadow: '0 4px 12px rgba(132, 195, 170, 0.3)',
               }}
             >
               + Generate New License
@@ -221,7 +221,7 @@ export default function LicensesPage() {
             marginBottom: "32px",
           }}>
             {[
-              { label: "Total Licenses", value: stats.total, color: "#667eea" },
+              { label: "Total Licenses", value: stats.total, color: "#84C3AA" },
               { label: "Active", value: stats.active, color: "#4ade80" },
               { label: "Unused", value: stats.unused, color: "#fbbf24" },
               { label: "Revoked", value: stats.revoked, color: "#ef4444" },
@@ -357,7 +357,7 @@ export default function LicensesPage() {
                       title="Click to copy"
                     >
                       {license.license_key}
-                      <span style={{ fontSize: '12px', color: '#667eea' }}>📋</span>
+                      <span style={{ fontSize: '12px', color: '#84C3AA' }}>📋</span>
                     </div>
                     <div style={{ fontSize: "12px", color: "#666", marginTop: '4px' }}>
                       Created {new Date(license.purchase_date).toLocaleDateString()}
@@ -407,10 +407,10 @@ export default function LicensesPage() {
                       onClick={() => setSelectedLicense(license)}
                       style={{
                         padding: "8px 12px",
-                        background: "rgba(102, 126, 234, 0.15)",
+                        background: "rgba(132, 195, 170, 0.15)",
                         border: "none",
                         borderRadius: "6px",
-                        color: "#667eea",
+                        color: "#84C3AA",
                         fontSize: "12px",
                         cursor: "pointer",
                       }}
@@ -488,7 +488,7 @@ function CreateLicenseModal({ onClose, onCreate }: { onClose: () => void; onCrea
           padding: "32px",
           maxWidth: "500px",
           width: "100%",
-          border: "1px solid rgba(102, 126, 234, 0.3)",
+          border: "1px solid rgba(132, 195, 170, 0.3)",
         }}
       >
         <h2 style={{ marginBottom: "8px", color: "#fff", fontSize: "24px" }}>
@@ -609,10 +609,10 @@ function CreateLicenseModal({ onClose, onCreate }: { onClose: () => void; onCrea
               style={{
                 flex: 1,
                 padding: "14px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                background: "linear-gradient(135deg, #84C3AA 0%, #5A9E84 100%)",
                 border: "none",
                 borderRadius: "8px",
-                color: "white",
+                color: "#1a1a1a",
                 fontWeight: "bold",
                 cursor: "pointer",
                 fontSize: "15px",
@@ -670,7 +670,7 @@ function LicenseDetailsModal({
           padding: "32px",
           maxWidth: "600px",
           width: "100%",
-          border: "1px solid rgba(102, 126, 234, 0.3)",
+          border: "1px solid rgba(132, 195, 170, 0.3)",
           maxHeight: "90vh",
           overflowY: "auto",
         }}
@@ -682,8 +682,8 @@ function LicenseDetailsModal({
         {/* License Key - Prominent */}
         <div style={{
           padding: "20px",
-          background: "rgba(102, 126, 234, 0.1)",
-          border: "1px solid rgba(102, 126, 234, 0.3)",
+          background: "rgba(132, 195, 170, 0.1)",
+          border: "1px solid rgba(132, 195, 170, 0.3)",
           borderRadius: "12px",
           marginBottom: "24px",
           textAlign: "center",
@@ -695,7 +695,7 @@ function LicenseDetailsModal({
             style={{ 
               fontFamily: "monospace", 
               fontSize: "24px", 
-              color: "#667eea",
+              color: "#84C3AA",
               cursor: 'pointer',
             }}
             onClick={() => copyToClipboard(license.license_key)}
@@ -708,10 +708,10 @@ function LicenseDetailsModal({
             style={{
               marginTop: '12px',
               padding: '8px 16px',
-              background: 'rgba(102, 126, 234, 0.2)',
+              background: 'rgba(132, 195, 170, 0.2)',
               border: 'none',
               borderRadius: '6px',
-              color: '#667eea',
+              color: '#84C3AA',
               fontSize: '13px',
               cursor: 'pointer',
             }}
