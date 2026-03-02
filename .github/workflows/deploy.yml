@@ -17,8 +17,10 @@ jobs:
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
           script: |
-            cd ~/Apollova-Website/Apollova
-            git pull origin main
-            npm install --production
+            cd ~/Apollova-Website
+            git fetch origin main
+            git reset --hard origin/main
+            cd Apollova
+            npm install
             npm run build
             pm2 restart apollova
