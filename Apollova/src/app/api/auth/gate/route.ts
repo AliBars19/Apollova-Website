@@ -1,5 +1,6 @@
 // src/app/api/auth/gate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { createSessionToken } from '@/utils/sessionToken';
 
 const SITE_PASSWORD = process.env.SITE_PASSWORD;
 
@@ -13,15 +14,14 @@ export async function POST(request: NextRequest) {
     const { password } = body;
 
     if (password === SITE_PASSWORD) {
-      // Create response with cookie
       const response = NextResponse.json({ success: true });
-      
-      // Set cookie that expires in 30 days
-      response.cookies.set('site_access', 'true', {
+
+      // Set HMAC-signed session cookie (30 days)
+      response.cookies.set('site_access', createSessionToken(), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24 * 30,
         path: '/',
       });
 

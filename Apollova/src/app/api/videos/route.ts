@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
 import path from "path";
+import { readJsonFile } from "@/utils/fileUtils";
 
-const ROOT = path.resolve("./");
-const DATA_FILE = path.join(ROOT, "data", "videos.json");
-
-
+const DATA_FILE = path.join(process.cwd(), "data", "videos.json");
 
 export async function GET() {
-  if (!fs.existsSync(DATA_FILE)) {
-    return NextResponse.json([]);
-  }
-
-  const videos = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+  const videos = await readJsonFile(DATA_FILE, []);
   return NextResponse.json(videos);
 }

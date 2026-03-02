@@ -5,10 +5,14 @@ import fs from 'fs/promises';
 import { publishToYouTube } from '@/utils/youtube';
 import { publishToTikTokCompliant } from '@/utils/tiktok';
 import { AccountId } from '@/utils/tokenManager';
+import { readJsonFile, writeJsonFileLocked, withLockedJsonFile } from '@/utils/fileUtils';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const VIDEOS_FILE = path.join(DATA_DIR, 'videos.json');
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+
+// In-flight guard: prevents the same video being published concurrently
+const publishingInFlight = new Set<string>();
 
 interface Video {
   id: string;
@@ -40,24 +44,31 @@ interface Video {
 }
 
 async function readVideos(): Promise<Video[]> {
-  try {
-    const data = await fs.readFile(VIDEOS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
+  return readJsonFile<Video[]>(VIDEOS_FILE, []);
 }
 
 async function writeVideos(videos: Video[]) {
-  await fs.writeFile(VIDEOS_FILE, JSON.stringify(videos, null, 2));
+  await writeJsonFileLocked(VIDEOS_FILE, videos);
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
+  // Reject if this video is already being published
+  if (publishingInFlight.has(id)) {
+    console.log(`⚠️  Video ${id} is already being published — rejecting duplicate request`);
+    return NextResponse.json(
+      { error: 'This video is already being published. Please wait.' },
+      { status: 409 }
+    );
+  }
+  publishingInFlight.add(id);
+
   try {
-    const { id } = await params;
+
     const body = await request.json();
     const { platform, publishData, autoDeleteSettings } = body;
 
@@ -218,5 +229,8 @@ export async function POST(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    // Always release the in-flight lock
+    publishingInFlight.delete(id);
   }
 }

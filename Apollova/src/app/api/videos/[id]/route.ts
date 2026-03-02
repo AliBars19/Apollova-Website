@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
 import type { Video } from "@/app/types";
+import { withLockedJsonFile } from "@/utils/fileUtils";
 
 const ROOT = path.resolve("./");
 const DATA_FILE = path.join(ROOT, "data", "videos.json");
@@ -13,39 +14,34 @@ export async function DELETE(
 ) {
   const { id } = await context.params;
 
-  if (!fs.existsSync(DATA_FILE)) {
-    return NextResponse.json({ error: "No videos data" }, { status: 404 });
-  }
+  // Capture deleted video info via a wrapper object (avoids TS closure narrowing issue)
+  const result: { video: Video | null } = { video: null };
 
-  const videos: Video[] = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-  const index = videos.findIndex((v) => v.id === id);
+  await withLockedJsonFile<Video[]>(DATA_FILE, [], (videos) => {
+    const index = videos.findIndex((v) => v.id === id);
+    if (index === -1) return videos;
+    result.video = videos[index];
+    videos.splice(index, 1);
+    return videos;
+  });
 
-  if (index === -1) {
+  if (!result.video) {
     return NextResponse.json({ error: "Video not found" }, { status: 404 });
   }
-
-  const video = videos[index];
 
   console.log("DELETE requested for ID:", id);
 
   // Delete video file from filesystem
-  if (video.url) {
-    const filename = video.url.replace("/uploads/", "");
+  if (result.video.url) {
+    const filename = result.video.url.replace("/uploads/", "");
     const filePath = path.join(UPLOAD_DIR, filename);
-
-    if (fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-        console.log("Deleted file:", filename);
-      } catch (err) {
-        console.warn("Failed to delete video file:", err);
-      }
+    try {
+      await fs.unlink(filePath);
+      console.log("Deleted file:", filename);
+    } catch (err) {
+      console.warn("Failed to delete video file:", err);
     }
   }
-
-  // Remove from JSON
-  videos.splice(index, 1);
-  fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
 
   return NextResponse.json({ ok: true });
 }
@@ -55,83 +51,78 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-
-  if (!fs.existsSync(DATA_FILE)) {
-    return NextResponse.json({ error: "No videos data" }, { status: 404 });
-  }
-
   const updates = await req.json();
-  const videos: Video[] = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
-
-  const video = videos.find((v) => v.id === id);
-  if (!video) {
-    return NextResponse.json({ error: "Video not found" }, { status: 404 });
-  }
 
   console.log("PATCH requested for ID:", id);
   console.log("Updates:", updates);
 
-  // Ensure platform objects exist
-  if (!video.tiktok) {
-    video.tiktok = { caption: "", status: "pending" };
-  }
-  if (!video.youtube) {
-    video.youtube = {
-      title: "",
-      description: "",
-      tags: [],
-      category: "10",
-      privacy: "public",
-      status: "pending"
-    };
-  }
+  let found = false;
+  let updatedVideo: Video | null = null;
 
-  // Update caption (simple field for backward compatibility)
-  if (typeof updates.caption === "string") {
-    video.tiktok.caption = updates.caption;
-    video.youtube.description = updates.caption;
-  }
+  await withLockedJsonFile<Video[]>(DATA_FILE, [], (videos) => {
+    const video = videos.find((v) => v.id === id);
+    if (!video) return videos;
+    found = true;
 
-  // Update TikTok data if provided
-  if (updates.tiktok) {
-    video.tiktok = {
-      ...video.tiktok,
-      ...updates.tiktok,
-    };
-  }
-
-  // Update YouTube data if provided
-  if (updates.youtube) {
-    video.youtube = {
-      ...video.youtube,
-      ...updates.youtube,
-    };
-  }
-
-  // Update scheduling
-  if (typeof updates.scheduledAt === "string" || updates.scheduledAt === null || updates.scheduledAt === undefined) {
-    video.scheduledAt = updates.scheduledAt || undefined;
-    // Update status based on scheduling
-    if (updates.scheduledAt) {
-      video.status = "scheduled";
-    } else if (video.status === "scheduled") {
-      video.status = "draft"; // Unscheduled
+    // Ensure platform objects exist
+    if (!video.tiktok) {
+      video.tiktok = { caption: "", status: "pending" } as Video["tiktok"];
     }
-  }
+    if (!video.youtube) {
+      video.youtube = {
+        title: "",
+        description: "",
+        tags: [],
+        category: "10",
+        privacy: "public",
+        status: "pending"
+      } as Video["youtube"];
+    }
 
-  // Update overall status if provided
-  if (updates.status) {
-    video.status = updates.status;
-  }
+    // Update caption
+    if (typeof updates.caption === "string") {
+      video.tiktok.caption = updates.caption;
+      video.youtube.description = updates.caption;
+    }
 
-  // Update account if provided
-  if (updates.account && ['aurora', 'mono', 'onyx'].includes(updates.account)) {
-    video.account = updates.account;
-  }
+    // Update TikTok data
+    if (updates.tiktok) {
+      video.tiktok = { ...video.tiktok, ...updates.tiktok };
+    }
 
-  // Save changes
-  fs.writeFileSync(DATA_FILE, JSON.stringify(videos, null, 2));
+    // Update YouTube data
+    if (updates.youtube) {
+      video.youtube = { ...video.youtube, ...updates.youtube };
+    }
+
+    // Update scheduling
+    if (typeof updates.scheduledAt === "string" || updates.scheduledAt === null || updates.scheduledAt === undefined) {
+      video.scheduledAt = updates.scheduledAt || undefined;
+      if (updates.scheduledAt) {
+        video.status = "scheduled";
+      } else if (video.status === "scheduled") {
+        video.status = "draft";
+      }
+    }
+
+    // Update overall status
+    if (updates.status) {
+      video.status = updates.status;
+    }
+
+    // Update account
+    if (updates.account && ['aurora', 'mono', 'onyx'].includes(updates.account)) {
+      video.account = updates.account;
+    }
+
+    updatedVideo = video;
+    return videos;
+  });
+
+  if (!found) {
+    return NextResponse.json({ error: "Video not found" }, { status: 404 });
+  }
 
   console.log("Video updated successfully");
-  return NextResponse.json({ ok: true, video });
+  return NextResponse.json({ ok: true, video: updatedVideo });
 }

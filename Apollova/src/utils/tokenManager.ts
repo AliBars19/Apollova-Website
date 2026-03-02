@@ -1,6 +1,7 @@
 // src/utils/tokenManager.ts
 import fs from 'fs';
 import path from 'path';
+import { atomicWriteFileSync } from '@/utils/fileUtils';
 
 const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
 
@@ -98,7 +99,7 @@ export function saveTokens(tokens: AllTokens): void {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
+  atomicWriteFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
   console.log('Tokens saved successfully');
 }
 

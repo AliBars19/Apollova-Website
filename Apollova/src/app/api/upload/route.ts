@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { AccountId } from '@/utils/tokenManager';
 import { parseFilename, generateCaption } from '@/utils/fileParser';
+import { withLockedJsonFile } from '@/utils/fileUtils';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -31,19 +32,7 @@ interface Video {
   };
 }
 
-async function readVideos(): Promise<Video[]> {
-  try {
-    const data = await fs.readFile(VIDEOS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-async function writeVideos(videos: Video[]) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(VIDEOS_FILE, JSON.stringify(videos, null, 2));
-}
+// readVideos/writeVideos replaced by withLockedJsonFile below
 
 export async function POST(request: NextRequest) {
   try {
@@ -122,10 +111,12 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Save to videos.json
-    const videos = await readVideos();
-    videos.push(video);
-    await writeVideos(videos);
+    // Save to videos.json (locked + atomic)
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await withLockedJsonFile<Video[]>(VIDEOS_FILE, [], (videos) => {
+      videos.push(video);
+      return videos;
+    });
 
     console.log(`Video uploaded: ${filename} (account: ${account})`);
     console.log(`  Title: ${title}`);

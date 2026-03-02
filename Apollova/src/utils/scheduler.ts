@@ -3,6 +3,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 import type { Video, AccountId } from '@/app/types';
+import { readJsonFile } from '@/utils/fileUtils';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'videos.json');
 
@@ -83,13 +84,12 @@ async function checkAndPublishScheduledVideos() {
     return;
   }
 
-  if (!fs.existsSync(DATA_FILE)) {
-    console.log('No videos.json file found');
+  // Load all videos
+  const videos: Video[] = await readJsonFile<Video[]>(DATA_FILE, []);
+  if (videos.length === 0) {
+    console.log('No videos found');
     return;
   }
-
-  // Load all videos
-  const videos: Video[] = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
 
   // Find videos that are scheduled (status = 'scheduled') and due (scheduledAt <= now)
   // Sort by scheduledAt (oldest first) to process backlog fairly
@@ -132,7 +132,7 @@ async function checkAndPublishScheduledVideos() {
   // Try to publish ONE video per account (respecting hourly limit)
   for (const [accountId, accountVideos] of Object.entries(byAccount)) {
     // Re-read videos to get latest state
-    const currentVideos: Video[] = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    const currentVideos: Video[] = await readJsonFile<Video[]>(DATA_FILE, []);
     
     if (!canPublishThisHour(currentVideos, accountId as AccountId)) {
       console.log(`⏸️  ${accountId}: Already published this hour, skipping`);
