@@ -1,5 +1,5 @@
 // src/utils/scheduler.ts
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 import type { Video, AccountId } from '@/app/types';
@@ -207,14 +207,24 @@ async function checkAndPublishScheduledVideos() {
 }
 
 /**
- * Starts the scheduler
+ * Singleton guard — prevents multiple cron jobs from being created.
+ * This is the ONLY guard needed; callers don't need their own flags.
+ */
+let schedulerTask: ScheduledTask | null = null;
+
+/**
+ * Starts the scheduler (idempotent — safe to call multiple times).
  * - Checks every 5 minutes for videos to publish
  * - Only publishes during 11am-10pm UTC window
  * - Max 1 video per account per hour
  */
 export function startScheduler() {
-  // Check every 5 minutes
-  cron.schedule('*/5 * * * *', async () => {
+  if (schedulerTask) {
+    console.log('[scheduler] Already running — skipping duplicate start');
+    return;
+  }
+
+  schedulerTask = cron.schedule('*/5 * * * *', async () => {
     await checkAndPublishScheduledVideos();
   });
 
@@ -227,6 +237,13 @@ export function startScheduler() {
   console.log(`✓ Rate limit: ${MAX_PER_ACCOUNT_PER_HOUR} video per account per hour`);
   console.log('✓ Accounts: aurora / mono / onyx');
   console.log('========================================');
+}
+
+/**
+ * Whether the scheduler is currently running.
+ */
+export function isSchedulerRunning(): boolean {
+  return schedulerTask !== null;
 }
 
 /**

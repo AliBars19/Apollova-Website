@@ -1,17 +1,15 @@
 // src/app/api/scheduler/start/route.ts
 import { NextResponse } from 'next/server';
-import { startScheduler } from '@/utils/scheduler';
-
-// Track if scheduler is already running
-let schedulerRunning = false;
+import { startScheduler, isSchedulerRunning } from '@/utils/scheduler';
 
 /**
  * GET /api/scheduler/start
- * Starts the background scheduler that checks for videos to publish
+ * Starts the background scheduler that checks for videos to publish.
+ * Safe to call multiple times — startScheduler() is idempotent.
  */
 export async function GET() {
-  if (schedulerRunning) {
-    return NextResponse.json({ 
+  if (isSchedulerRunning()) {
+    return NextResponse.json({
       status: 'already_running',
       message: 'Scheduler is already running'
     });
@@ -19,9 +17,8 @@ export async function GET() {
 
   try {
     startScheduler();
-    schedulerRunning = true;
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       status: 'started',
       message: 'Scheduler started successfully',
       schedule: 'Checking every 5 minutes for videos to publish',
@@ -29,7 +26,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { 
+      {
         status: 'error',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
