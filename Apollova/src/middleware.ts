@@ -10,6 +10,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/auth/callback/',
   '/api/activate',
   '/api/verify',
+  '/api/scheduler/',
 ];
 
 function isPublicApi(pathname: string): boolean {
@@ -66,6 +67,12 @@ export async function middleware(request: NextRequest) {
   const isProtectedApi = pathname.startsWith('/api/') && !isPublicApi(pathname);
 
   if (!isProtectedPage && !isProtectedApi) {
+    return NextResponse.next();
+  }
+
+  // Allow internal server-to-server calls (e.g. scheduler → publish endpoint)
+  const internalSecret = request.headers.get('x-internal-secret');
+  if (internalSecret && internalSecret === process.env.SITE_PASSWORD) {
     return NextResponse.next();
   }
 

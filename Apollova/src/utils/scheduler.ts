@@ -147,7 +147,10 @@ async function checkAndPublishScheduledVideos() {
       
       const response = await fetch(`${baseUrl}/api/videos/${video.id}/publish`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': process.env.SITE_PASSWORD || '',
+        },
         body: JSON.stringify({
           platform: 'both',
           publishData: {
@@ -208,9 +211,10 @@ async function checkAndPublishScheduledVideos() {
 
 /**
  * Singleton guard — prevents multiple cron jobs from being created.
- * This is the ONLY guard needed; callers don't need their own flags.
+ * Uses globalThis to survive Next.js module re-bundling (which can create
+ * separate module instances, each with their own module-scoped variables).
  */
-let schedulerTask: ScheduledTask | null = null;
+const globalRef = globalThis as typeof globalThis & { __schedulerTask?: ScheduledTask | null };
 
 /**
  * Starts the scheduler (idempotent — safe to call multiple times).
@@ -219,12 +223,12 @@ let schedulerTask: ScheduledTask | null = null;
  * - Max 1 video per account per hour
  */
 export function startScheduler() {
-  if (schedulerTask) {
+  if (globalRef.__schedulerTask) {
     console.log('[scheduler] Already running — skipping duplicate start');
     return;
   }
 
-  schedulerTask = cron.schedule('*/5 * * * *', async () => {
+  globalRef.__schedulerTask = cron.schedule('*/5 * * * *', async () => {
     await checkAndPublishScheduledVideos();
   });
 
@@ -243,7 +247,7 @@ export function startScheduler() {
  * Whether the scheduler is currently running.
  */
 export function isSchedulerRunning(): boolean {
-  return schedulerTask !== null;
+  return globalRef.__schedulerTask !== null;
 }
 
 /**
