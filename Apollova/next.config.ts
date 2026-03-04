@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['node-cron'],
+  experimental: {
+    middlewareClientMaxBodySize: '500mb',
+  },
   async rewrites() {
     return [
       {
