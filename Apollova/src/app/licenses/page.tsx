@@ -117,6 +117,27 @@ export default function LicensesPage() {
     }
   };
 
+  const handleDeleteLicense = async (id: string) => {
+    if (!confirm("Are you sure you want to PERMANENTLY DELETE this license? This cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/licenses/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        await fetchLicenses();
+        setSelectedLicense(null);
+      } else {
+        alert("Failed to delete license");
+      }
+    } catch (error) {
+      alert("Error deleting license");
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert("📋 Copied to clipboard!");
@@ -440,6 +461,7 @@ export default function LicensesPage() {
           onClose={() => setSelectedLicense(null)}
           onRevoke={handleRevokeLicense}
           onResetHardware={handleResetHardware}
+          onDelete={handleDeleteLicense}
         />
       )}
     </>
@@ -628,16 +650,18 @@ function CreateLicenseModal({ onClose, onCreate }: { onClose: () => void; onCrea
 }
 
 // License Details Modal
-function LicenseDetailsModal({ 
-  license, 
-  onClose, 
-  onRevoke, 
-  onResetHardware 
-}: { 
-  license: License; 
-  onClose: () => void; 
+function LicenseDetailsModal({
+  license,
+  onClose,
+  onRevoke,
+  onResetHardware,
+  onDelete,
+}: {
+  license: License;
+  onClose: () => void;
   onRevoke: (id: string) => void;
   onResetHardware: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -801,6 +825,26 @@ function LicenseDetailsModal({
               ⛔ Revoke License
             </button>
           </div>
+        )}
+
+        {license.revoked && (
+          <button
+            onClick={() => onDelete(license.id)}
+            style={{
+              width: "100%",
+              padding: "14px",
+              marginBottom: "16px",
+              background: "rgba(239, 68, 68, 0.15)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "8px",
+              color: "#ef4444",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            🗑 Delete Permanently
+          </button>
         )}
 
         <button
