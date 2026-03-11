@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
 
     // Create response and clear cookies
     const successUrl = process.env.NODE_ENV === 'production'
-      ? `https://apollova.co.uk/auth-success?platform=tiktok&account=${account}`
+      ? `https://macbookvisuals.co.uk/auth-success?platform=tiktok&account=${account}`
       : `http://localhost:3000/auth-success?platform=tiktok&account=${account}`;
     
     return NextResponse.redirect(successUrl);
