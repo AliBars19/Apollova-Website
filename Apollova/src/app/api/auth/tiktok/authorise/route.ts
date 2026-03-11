@@ -54,11 +54,14 @@ export async function GET(request: NextRequest) {
 
   // Generate PKCE values
   const { codeVerifier, codeChallenge } = generatePKCE();
-  
-  // Generate random state that includes account info
-  const stateData = JSON.stringify({ 
-    account, 
-    csrf: crypto.randomBytes(16).toString('base64url') 
+
+  // Encode account, CSRF token, AND code_verifier into the state parameter.
+  // This avoids cross-domain cookie issues (cookies set on apollova.co.uk
+  // are invisible when TikTok redirects back to macbookvisuals.com).
+  const stateData = JSON.stringify({
+    account,
+    csrf: crypto.randomBytes(16).toString('base64url'),
+    cv: codeVerifier,
   });
   const state = Buffer.from(stateData).toString('base64url');
 
@@ -74,24 +77,5 @@ export async function GET(request: NextRequest) {
 
   console.log(`Redirecting to TikTok OAuth for account: ${account}`);
 
-  // Create response with redirect
-  const response = NextResponse.redirect(authUrl.toString());
-  
-  // Store code_verifier in cookie
-  response.cookies.set('tiktok_code_verifier', codeVerifier, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 600, // 10 minutes
-  });
-  
-  // Store state in cookie for CSRF protection
-  response.cookies.set('tiktok_state', state, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 600,
-  });
-
-  return response;
+  return NextResponse.redirect(authUrl.toString());
 }

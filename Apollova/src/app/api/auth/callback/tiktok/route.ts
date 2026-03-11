@@ -17,40 +17,35 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!code) {
+  if (!code || !state) {
     return NextResponse.json(
-      { error: 'No authorization code provided' },
+      { error: 'No authorization code or state provided' },
       { status: 400 }
     );
   }
 
-  // Verify state for CSRF protection
-  const savedState = request.cookies.get('tiktok_state')?.value;
-  if (!savedState || savedState !== state) {
-    console.error('State mismatch - possible CSRF attack');
+  // Parse account and code_verifier from state parameter.
+  // State carries everything because cookies set on apollova.co.uk are
+  // invisible when TikTok redirects back to macbookvisuals.com.
+  let account: AccountId = 'aurora';
+  let codeVerifier: string | undefined;
+  try {
+    const stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
+    if (stateData.account === 'aurora' || stateData.account === 'mono' || stateData.account === 'onyx') {
+      account = stateData.account;
+    }
+    codeVerifier = stateData.cv;
+  } catch (e) {
+    console.error('Failed to parse state:', e);
     return NextResponse.json(
       { error: 'Invalid state parameter' },
       { status: 400 }
     );
   }
 
-  // Parse account from state
-  let account: AccountId = 'aurora';
-  try {
-    const stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
-    if (stateData.account === 'aurora' || stateData.account === 'mono' || stateData.account === 'onyx') {
-      account = stateData.account;
-    }
-  } catch (e) {
-    console.error('Failed to parse state, defaulting to aurora');
-  }
-
-  // Get code_verifier from cookie
-  const codeVerifier = request.cookies.get('tiktok_code_verifier')?.value;
   if (!codeVerifier) {
-    console.error('Code verifier not found in cookies');
     return NextResponse.json(
-      { error: 'Code verifier missing - try authorizing again' },
+      { error: 'Code verifier missing from state - try authorizing again' },
       { status: 400 }
     );
   }
@@ -141,15 +136,10 @@ export async function GET(request: NextRequest) {
 
     // Create response and clear cookies
     const successUrl = process.env.NODE_ENV === 'production'
-      ? `https://macbookvisuals.com/auth-success?platform=tiktok&account=${account}`
+      ? `https://apollova.co.uk/auth-success?platform=tiktok&account=${account}`
       : `http://localhost:3000/auth-success?platform=tiktok&account=${account}`;
     
-    const response = NextResponse.redirect(successUrl);
-    
-    response.cookies.delete('tiktok_code_verifier');
-    response.cookies.delete('tiktok_state');
-    
-    return response;
+    return NextResponse.redirect(successUrl);
   } catch (error) {
     console.error('Error during TikTok OAuth:', error);
     return NextResponse.json(
