@@ -60,9 +60,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const redirectUri = process.env.NODE_ENV === 'production'
-    ? 'https://macbookvisuals.com/api/auth/callback/tiktok'
-    : 'http://localhost:3000/api/auth/callback/tiktok';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const redirectUri = `${baseUrl}/api/auth/callback/tiktok`;
 
   try {
     console.log(`Exchanging code for TikTok tokens (account: ${account})...`);
@@ -135,9 +134,7 @@ export async function GET(request: NextRequest) {
     console.log(`TikTok tokens saved for account: ${account}`);
 
     // Create response and clear cookies
-    const successUrl = process.env.NODE_ENV === 'production'
-      ? `https://macbookvisuals.co.uk/auth-success?platform=tiktok&account=${account}`
-      : `http://localhost:3000/auth-success?platform=tiktok&account=${account}`;
+    const successUrl = `${baseUrl}/auth-success?platform=tiktok&account=${account}`;
     
     return NextResponse.redirect(successUrl);
   } catch (error) {

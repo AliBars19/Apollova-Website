@@ -37,9 +37,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const redirectUri = process.env.NODE_ENV === 'production'
-    ? 'https://macbookvisuals.com/api/auth/callback/youtube'
-    : 'http://localhost:3000/api/auth/callback/youtube';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const redirectUri = `${baseUrl}/api/auth/callback/youtube`;
 
   try {
     console.log(`Exchanging code for YouTube tokens (account: ${account})...`);
@@ -110,9 +109,7 @@ export async function GET(request: NextRequest) {
     console.log(`YouTube tokens saved for account: ${account}`);
 
     // Redirect to success page
-    const successUrl = process.env.NODE_ENV === 'production'
-      ? `https://macbookvisuals.com/auth-success?platform=youtube&account=${account}`
-      : `http://localhost:3000/auth-success?platform=youtube&account=${account}`;
+    const successUrl = `${baseUrl}/auth-success?platform=youtube&account=${account}`;
 
     return NextResponse.redirect(successUrl);
   } catch (error) {

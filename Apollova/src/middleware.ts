@@ -92,7 +92,11 @@ export async function middleware(request: NextRequest) {
     }
 
     const response = NextResponse.redirect(new URL('/gate', request.url));
-    response.cookies.set('redirect_after_gate', pathname, {
+    // Only allow redirect back to known protected paths (prevent open redirect)
+    const safeRedirect = protectedPages.some((p) => pathname.startsWith(p))
+      ? pathname
+      : '/dashboard';
+    response.cookies.set('redirect_after_gate', safeRedirect, {
       httpOnly: true,
       path: '/',
       maxAge: 60 * 5,

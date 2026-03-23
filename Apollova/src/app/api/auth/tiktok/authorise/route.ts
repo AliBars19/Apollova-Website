@@ -48,9 +48,8 @@ export async function GET(request: NextRequest) {
   ].join(',');
 
   // Redirect URI (must match what's in TikTok Developer Portal)
-  const redirectUri = process.env.NODE_ENV === 'production'
-    ? 'https://macbookvisuals.com/api/auth/callback/tiktok'
-    : 'http://localhost:3000/api/auth/callback/tiktok';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const redirectUri = `${baseUrl}/api/auth/callback/tiktok`;
 
   // Generate PKCE values
   const { codeVerifier, codeChallenge } = generatePKCE();
