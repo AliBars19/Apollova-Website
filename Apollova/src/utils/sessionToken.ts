@@ -2,9 +2,7 @@
 // HMAC-signed session tokens to replace the forgeable "true" cookie value.
 // Uses SITE_PASSWORD as the signing key so no extra env var is needed.
 
-import { createHmac, timingSafeEqual } from 'crypto';
-
-const COOKIE_NAME = 'site_access';
+import { createHmac } from 'crypto';
 
 function getSecret(): string {
   const secret = process.env.SITE_PASSWORD;
@@ -25,27 +23,3 @@ export function createSessionToken(): string {
   return `${payload}.${sig}`;
 }
 
-/**
- * Verify a session token. Returns true if valid.
- */
-export function verifySessionToken(token: string): boolean {
-  if (!token || !token.includes('.')) return false;
-
-  try {
-    const [payload, sig] = token.split('.');
-    if (!payload || !sig) return false;
-
-    const expectedSig = createHmac('sha256', getSecret()).update(payload).digest('base64url');
-
-    // Timing-safe comparison
-    const sigBuf = Buffer.from(sig);
-    const expBuf = Buffer.from(expectedSig);
-    if (sigBuf.length !== expBuf.length) return false;
-
-    return timingSafeEqual(sigBuf, expBuf);
-  } catch {
-    return false;
-  }
-}
-
-export { COOKIE_NAME };

@@ -39,20 +39,6 @@ export function generateDailySchedule(date: Date = new Date()): string[] {
  */
 
 /**
- * Formats a scheduled time for display
- */
-export function formatScheduledTime(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    month: 'short',
-    day: 'numeric'
-  });
-}
-
-/**
  * Gets the next available time slot for today
  */
 export function getNextAvailableSlot(): string | null {
@@ -70,11 +56,3 @@ export function getNextAvailableSlot(): string | null {
   return null;
 }
 
-/**
- * Example: Schedule videos for tomorrow
- */
-export function scheduleTomorrow(): string[] {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return generateDailySchedule(tomorrow);
-}

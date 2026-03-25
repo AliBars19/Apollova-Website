@@ -8,7 +8,7 @@ const TOKENS_FILE = path.join(process.cwd(), 'data', 'tokens.json');
 // Account identifiers
 export type AccountId = 'aurora' | 'mono' | 'onyx';
 
-export interface YouTubeTokens {
+interface YouTubeTokens {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
@@ -16,7 +16,7 @@ export interface YouTubeTokens {
   channelName?: string;
 }
 
-export interface TikTokTokens {
+interface TikTokTokens {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
@@ -25,12 +25,12 @@ export interface TikTokTokens {
   username?: string;
 }
 
-export interface AccountTokens {
+interface AccountTokens {
   youtube?: YouTubeTokens;
   tiktok?: TikTokTokens;
 }
 
-export interface AllTokens {
+interface AllTokens {
   // Multi-account structure
   accounts: {
     aurora: AccountTokens;
@@ -106,27 +106,15 @@ export function saveTokens(tokens: AllTokens): void {
 /**
  * Get tokens for a specific account
  */
-export function getAccountTokens(accountId: AccountId): AccountTokens {
+function getAccountTokens(accountId: AccountId): AccountTokens {
   const tokens = loadTokens();
   return tokens.accounts[accountId] || {};
 }
 
 /**
- * Save tokens for a specific account
- */
-export function saveAccountTokens(accountId: AccountId, accountTokens: AccountTokens): void {
-  const tokens = loadTokens();
-  tokens.accounts[accountId] = {
-    ...tokens.accounts[accountId],
-    ...accountTokens,
-  };
-  saveTokens(tokens);
-}
-
-/**
  * Check if YouTube token is expired for an account
  */
-export function isYouTubeTokenExpired(accountId: AccountId): boolean {
+function isYouTubeTokenExpired(accountId: AccountId): boolean {
   const accountTokens = getAccountTokens(accountId);
   if (!accountTokens.youtube) return true;
   
@@ -140,7 +128,7 @@ export function isYouTubeTokenExpired(accountId: AccountId): boolean {
 /**
  * Check if TikTok token is expired for an account
  */
-export function isTikTokTokenExpired(accountId: AccountId): boolean {
+function isTikTokTokenExpired(accountId: AccountId): boolean {
   const accountTokens = getAccountTokens(accountId);
   if (!accountTokens.tiktok) return true;
   
@@ -154,7 +142,7 @@ export function isTikTokTokenExpired(accountId: AccountId): boolean {
 /**
  * Refresh YouTube access token with retry logic
  */
-export async function refreshYouTubeToken(refreshToken: string, retries = 3): Promise<YouTubeTokens> {
+async function refreshYouTubeToken(refreshToken: string, retries = 3): Promise<YouTubeTokens> {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 
@@ -263,7 +251,7 @@ export async function getValidYouTubeToken(accountId: AccountId): Promise<string
 /**
  * Refresh TikTok access token
  */
-export async function refreshTikTokToken(refreshToken: string): Promise<TikTokTokens> {
+async function refreshTikTokToken(refreshToken: string): Promise<TikTokTokens> {
   const clientKey = process.env.TIKTOK_CLIENT_KEY;
   const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
 
