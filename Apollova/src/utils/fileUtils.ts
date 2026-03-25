@@ -5,7 +5,6 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
-import os from 'os';
 
 /**
  * Simple async mutex — serializes access to a shared resource.
@@ -52,7 +51,7 @@ function getMutex(filePath: string): AsyncMutex {
  * Atomic write: writes to a temp file in the same directory, then renames.
  * Rename is atomic on Linux/Mac (the production server runs Linux).
  */
-export async function atomicWriteFile(filePath: string, data: string): Promise<void> {
+async function atomicWriteFile(filePath: string, data: string): Promise<void> {
   const dir = path.dirname(filePath);
   const tmpFile = path.join(dir, `.${path.basename(filePath)}.tmp.${process.pid}`);
 
@@ -72,14 +71,23 @@ export function atomicWriteFileSync(filePath: string, data: string): void {
 }
 
 /**
- * Read a JSON file with mutex protection.
+ * Read a JSON file safely.
+ * Returns fallback only when the file does not exist.
+ * Throws on corruption or unexpected I/O errors so callers don't
+ * silently overwrite good data with an empty fallback.
  */
 export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
   try {
     const data = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(data);
-  } catch {
-    return fallback;
+  } catch (err: unknown) {
+    // File doesn't exist yet — that's fine, use the fallback
+    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return fallback;
+    }
+    // Any other error (corrupt JSON, permission denied, disk I/O) — rethrow
+    // so callers don't accidentally wipe good data with an empty array
+    throw err;
   }
 }
 
@@ -101,20 +109,6 @@ export async function withLockedJsonFile<T>(
     const updated = await updater(current);
     await atomicWriteFile(filePath, JSON.stringify(updated, null, 2));
     return updated;
-  } finally {
-    release();
-  }
-}
-
-/**
- * Locked write for a JSON file (no read step, just serialize writes).
- */
-export async function writeJsonFileLocked<T>(filePath: string, data: T): Promise<void> {
-  const mutex = getMutex(filePath);
-  const release = await mutex.acquire();
-
-  try {
-    await atomicWriteFile(filePath, JSON.stringify(data, null, 2));
   } finally {
     release();
   }
