@@ -24,18 +24,21 @@ describe('readJsonFile', () => {
     expect(result.x).toBe(42);
   });
 
-  it('returns fallback for invalid JSON', async () => {
+  it('throws on invalid JSON (prevents silent data wipe)', async () => {
     const filePath = path.join(tmpDir, 'bad.json');
     await fs.writeFile(filePath, 'not json');
-    const result = await readJsonFile(filePath, { fallback: true });
-    expect(result.fallback).toBe(true);
+    await expect(readJsonFile(filePath, { fallback: true })).rejects.toThrow();
   });
 
-  it('returns fallback for empty file', async () => {
+  it('throws on empty file (prevents silent data wipe)', async () => {
     const filePath = path.join(tmpDir, 'empty.json');
     await fs.writeFile(filePath, '');
-    const result = await readJsonFile(filePath, { empty: true });
-    expect(result.empty).toBe(true);
+    await expect(readJsonFile(filePath, { empty: true })).rejects.toThrow();
+  });
+
+  it('throws on permission error (non-ENOENT I/O error)', async () => {
+    // Use a directory path as the "file" — reading a directory throws EISDIR, not ENOENT
+    await expect(readJsonFile(tmpDir, { fallback: true })).rejects.toThrow();
   });
 });
 
@@ -98,5 +101,20 @@ describe('withLockedJsonFile', () => {
     await Promise.all(promises);
     const final = JSON.parse(await fs.readFile(filePath, 'utf-8'));
     expect(final.count).toBe(5);
+  });
+
+  it('lock released when readJsonFile throws on corrupt file', async () => {
+    const filePath = path.join(tmpDir, 'corrupt.json');
+    await fs.writeFile(filePath, '{ broken json');
+
+    // First call should throw because the file is corrupt
+    await expect(
+      withLockedJsonFile(filePath, { ok: true }, (d) => d)
+    ).rejects.toThrow();
+
+    // Fix the file and verify lock was released (second call should succeed)
+    await fs.writeFile(filePath, JSON.stringify({ ok: true }));
+    const result = await withLockedJsonFile(filePath, { ok: false }, (d) => d);
+    expect(result.ok).toBe(true);
   });
 });
