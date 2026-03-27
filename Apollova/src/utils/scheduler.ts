@@ -1,11 +1,13 @@
 // src/utils/scheduler.ts
 import cron, { type ScheduledTask } from 'node-cron';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 import type { Video, AccountId } from '@/app/types';
-import { readJsonFile } from '@/utils/fileUtils';
+import { readJsonFile, withLockedJsonFile } from '@/utils/fileUtils';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'videos.json');
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // Publishing window (24-hour format, UTC)
 // 11:00 to 22:00 UTC = 11am to 10pm
@@ -71,11 +73,61 @@ function canPublishThisHour(videos: Video[], accountId: AccountId): boolean {
  * - Max 1 video per account per hour
  * - Processes oldest scheduled videos first
  */
+// How long to keep failed/partial videos before auto-cleanup (hours)
+const STALE_VIDEO_MAX_AGE_HOURS = 12;
+
+/**
+ * Remove failed/partial videos older than STALE_VIDEO_MAX_AGE_HOURS.
+ * Deletes both the JSON record and the video file on disk.
+ */
+async function cleanupStaleVideos(now: Date) {
+  const cutoff = new Date(now.getTime() - STALE_VIDEO_MAX_AGE_HOURS * 60 * 60 * 1000);
+
+  const removedNames: string[] = [];
+
+  await withLockedJsonFile<Video[]>(DATA_FILE, [], (videos) => {
+    const stale = videos.filter((v) => {
+      if (v.status !== 'failed' && v.status !== 'partial') return false;
+      const uploaded = new Date(v.uploadedAt);
+      return uploaded < cutoff;
+    });
+
+    if (stale.length === 0) return videos;
+
+    for (const v of stale) {
+      removedNames.push(v.filename);
+    }
+
+    const staleIds = new Set(stale.map((v) => v.id));
+    return videos.filter((v) => !staleIds.has(v.id));
+  });
+
+  // Delete video files outside the lock
+  for (const filename of removedNames) {
+    try {
+      const safeName = path.basename(filename);
+      const filePath = path.resolve(UPLOADS_DIR, safeName);
+      if (filePath.startsWith(path.resolve(UPLOADS_DIR))) {
+        await fsPromises.unlink(filePath);
+      }
+    } catch {
+      // File already gone — fine
+    }
+  }
+
+  if (removedNames.length > 0) {
+    console.log(`🧹 Cleaned up ${removedNames.length} stale video(s) older than ${STALE_VIDEO_MAX_AGE_HOURS}h: ${removedNames.map(f => path.basename(f, '.mp4')).join(', ')}`);
+  }
+}
+
 async function checkAndPublishScheduledVideos() {
   const now = new Date();
   const timestamp = now.toISOString();
-  
+
   console.log(`[${timestamp}] Checking for scheduled videos...`);
+
+  // ── Cleanup stale failed/partial videos older than 12 hours ──
+  await cleanupStaleVideos(now);
 
   // Check if we're in the publishing window
   if (!isWithinPublishingWindow()) {

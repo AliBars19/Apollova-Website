@@ -406,8 +406,22 @@ describe('canPublishThisHour', () => {
 // ---------------------------------------------------------------------------
 
 // Module-level mock — factory uses only literals / inline functions
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return { ...actual, default: { ...actual, unlink: vi.fn() }, unlink: vi.fn() };
+});
+
 vi.mock('@/utils/fileUtils', () => ({
   readJsonFile: vi.fn(),
+  withLockedJsonFile: vi.fn(async (
+    _filePath: string,
+    fallback: unknown,
+    updater: (current: unknown) => unknown,
+  ) => {
+    // Stale cleanup runs against an empty store in tests — just pass through
+    const result = await updater(fallback);
+    return result;
+  }),
 }));
 
 describe('checkAndPublishScheduledVideos (via triggerSchedulerCheck)', () => {
