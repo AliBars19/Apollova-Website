@@ -142,7 +142,7 @@ function isTikTokTokenExpired(accountId: AccountId): boolean {
 /**
  * Refresh YouTube access token with retry logic
  */
-async function refreshYouTubeToken(refreshToken: string, retries = 3): Promise<YouTubeTokens> {
+async function refreshYouTubeToken(refreshToken: string, retries = 3, accountId?: AccountId): Promise<YouTubeTokens> {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
 
@@ -175,6 +175,9 @@ async function refreshYouTubeToken(refreshToken: string, retries = 3): Promise<Y
         
         // Check if it's an invalid_grant error (token revoked/expired permanently)
         if (errorData.includes('invalid_grant')) {
+          // Auto-disconnect the dead token so the dashboard shows "Not connected"
+          // instead of a confusing connected-but-broken state
+          disconnectPlatformForRefreshFailure(accountId, 'youtube');
           throw new Error('YouTube refresh token is invalid or revoked. Please re-authenticate.');
         }
         
@@ -232,8 +235,8 @@ export async function getValidYouTubeToken(accountId: AccountId): Promise<string
   if (isYouTubeTokenExpired(accountId)) {
     console.log(`YouTube token expired for ${accountId}, refreshing...`);
     
-    const newTokens = await refreshYouTubeToken(accountTokens.youtube.refreshToken);
-    
+    const newTokens = await refreshYouTubeToken(accountTokens.youtube.refreshToken, 3, accountId);
+
     // Preserve channel name
     newTokens.channelName = accountTokens.youtube.channelName;
     
@@ -251,7 +254,7 @@ export async function getValidYouTubeToken(accountId: AccountId): Promise<string
 /**
  * Refresh TikTok access token
  */
-async function refreshTikTokToken(refreshToken: string): Promise<TikTokTokens> {
+async function refreshTikTokToken(refreshToken: string, accountId?: AccountId): Promise<TikTokTokens> {
   const clientKey = process.env.TIKTOK_CLIENT_KEY;
   const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
 
@@ -277,6 +280,12 @@ async function refreshTikTokToken(refreshToken: string): Promise<TikTokTokens> {
   if (!response.ok) {
     const errorData = await response.text();
     console.error('TikTok token refresh failed:', errorData);
+    // Check for permanently invalid token
+    if (errorData.includes('invalid_grant') || errorData.includes('error')) {
+      if (accountId) {
+        disconnectPlatformForRefreshFailure(accountId, 'tiktok');
+      }
+    }
     throw new Error('Failed to refresh TikTok token');
   }
 
@@ -304,8 +313,8 @@ export async function getValidTikTokToken(accountId: AccountId): Promise<string>
   if (isTikTokTokenExpired(accountId)) {
     console.log(`TikTok token expired for ${accountId}, refreshing...`);
     
-    const newTokens = await refreshTikTokToken(accountTokens.tiktok.refreshToken);
-    
+    const newTokens = await refreshTikTokToken(accountTokens.tiktok.refreshToken, accountId);
+
     // Preserve openId and username
     newTokens.openId = accountTokens.tiktok.openId;
     newTokens.username = accountTokens.tiktok.username;
@@ -382,4 +391,16 @@ export function disconnectPlatform(accountId: AccountId, platform: 'youtube' | '
     delete tokens.accounts[accountId][platform];
     saveTokens(tokens);
   }
+}
+
+/**
+ * Auto-disconnect a platform when its refresh token is permanently dead.
+ * Called internally by the refresh logic — logs a prominent warning.
+ */
+function disconnectPlatformForRefreshFailure(accountId: AccountId, platform: 'youtube' | 'tiktok'): void {
+  console.error('='.repeat(60));
+  console.error(`⚠️  ${platform.toUpperCase()} TOKEN REVOKED for [${accountId}]`);
+  console.error(`   Auto-disconnecting. Re-authenticate via the dashboard.`);
+  console.error('='.repeat(60));
+  disconnectPlatform(accountId, platform);
 }
