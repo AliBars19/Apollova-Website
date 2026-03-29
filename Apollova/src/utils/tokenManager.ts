@@ -177,7 +177,7 @@ async function refreshYouTubeToken(refreshToken: string, retries = 3, accountId?
         if (errorData.includes('invalid_grant')) {
           // Auto-disconnect the dead token so the dashboard shows "Not connected"
           // instead of a confusing connected-but-broken state
-          disconnectPlatformForRefreshFailure(accountId, 'youtube');
+          if (accountId) { disconnectPlatformForRefreshFailure(accountId, 'youtube'); }
           throw new Error('YouTube refresh token is invalid or revoked. Please re-authenticate.');
         }
         
