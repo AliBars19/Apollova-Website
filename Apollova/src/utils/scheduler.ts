@@ -120,6 +120,60 @@ async function cleanupStaleVideos(now: Date) {
   }
 }
 
+/**
+ * Remove orphaned .mp4 files on disk that are not tracked in videos.json.
+ * Uses the timestamp prefix in filenames (e.g. 1774860708304_Song.mp4)
+ * to determine age — only deletes files older than STALE_VIDEO_MAX_AGE_HOURS.
+ */
+async function cleanupOrphanedFiles(now: Date) {
+  const cutoffMs = now.getTime() - STALE_VIDEO_MAX_AGE_HOURS * 60 * 60 * 1000;
+
+  // Read tracked filenames under lock
+  const tracked = new Set<string>();
+  await withLockedJsonFile<Video[]>(DATA_FILE, [], (videos) => {
+    for (const v of videos) {
+      tracked.add(v.filename);
+    }
+    return videos;
+  });
+
+  let files: string[];
+  try {
+    files = await fsPromises.readdir(UPLOADS_DIR);
+  } catch {
+    return; // uploads dir doesn't exist yet
+  }
+
+  const removed: string[] = [];
+  for (const file of files) {
+    if (!file.endsWith('.mp4')) continue;
+    if (tracked.has(file)) continue;
+
+    // Extract timestamp prefix from filename (digits before first underscore)
+    const tsMatch = file.match(/^(\d+)_/);
+    if (tsMatch) {
+      const fileTimestamp = Number(tsMatch[1]);
+      if (fileTimestamp >= cutoffMs) continue; // too recent, skip
+    }
+
+    // Safe deletion with path containment check
+    try {
+      const safeName = path.basename(file);
+      const filePath = path.resolve(UPLOADS_DIR, safeName);
+      if (filePath.startsWith(path.resolve(UPLOADS_DIR))) {
+        await fsPromises.unlink(filePath);
+        removed.push(safeName);
+      }
+    } catch {
+      // File already gone — fine
+    }
+  }
+
+  if (removed.length > 0) {
+    console.log(`🧹 Cleaned up ${removed.length} orphaned file(s): ${removed.map(f => path.basename(f, '.mp4')).join(', ')}`);
+  }
+}
+
 async function checkAndPublishScheduledVideos() {
   const now = new Date();
   const timestamp = now.toISOString();
@@ -128,6 +182,9 @@ async function checkAndPublishScheduledVideos() {
 
   // ── Cleanup stale failed/partial videos older than 12 hours ──
   await cleanupStaleVideos(now);
+
+  // ── Cleanup orphaned files on disk not tracked in videos.json ──
+  await cleanupOrphanedFiles(now);
 
   // Check if we're in the publishing window
   if (!isWithinPublishingWindow()) {
