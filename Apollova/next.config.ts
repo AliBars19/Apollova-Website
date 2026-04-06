@@ -4,14 +4,6 @@ const nextConfig = {
   experimental: {
     middlewareClientMaxBodySize: '500mb',
   },
-  async rewrites() {
-    return [
-      {
-        source: "/uploads/:path*",
-        destination: "/../uploads/:path*",
-      },
-    ];
-  },
 };
 
 export default nextConfig;
