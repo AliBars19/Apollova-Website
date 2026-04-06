@@ -23,6 +23,7 @@ export default function VideoCard({
 }: VideoCardProps) {
   const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [caption, setCaption] = useState(video.tiktok.caption);
   const [scheduledAt, setScheduledAt] = useState(video.scheduledAt || "");
   const [account, setAccount] = useState<AccountId>(video.account || 'aurora');
@@ -57,6 +58,34 @@ export default function VideoCard({
   const statusStyle = getStatusColor();
 
   return (
+    <>
+      {modalOpen && (
+        <div
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <video
+            src={video.url}
+            controls
+            autoPlay
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              borderRadius: '12px',
+              outline: 'none',
+            }}
+          />
+        </div>
+      )}
     <div style={{
       background: colors.backgroundSecondary,
       borderRadius: '16px',
@@ -74,7 +103,7 @@ export default function VideoCard({
       }}>
         <video
           src={video.url}
-          style={{ maxHeight: "200px", width: "100%", objectFit: "contain" }}
+          style={{ maxHeight: "200px", width: "100%", objectFit: "contain", cursor: 'pointer' }}
           controls={false}
           muted
           onMouseOver={(e) => (e.target as HTMLVideoElement).play()}
@@ -83,6 +112,7 @@ export default function VideoCard({
             vid.pause();
             vid.currentTime = 0;
           }}
+          onClick={() => setModalOpen(true)}
         />
       </div>
 
@@ -391,5 +421,6 @@ export default function VideoCard({
         </>
       )}
     </div>
+    </>
   );
 }
